@@ -11,6 +11,7 @@
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
     this.onClick = this.onClick.bind(this);
+    this.onKeyPress = this.onKeyPress.bind(this);
   }
   RichConfirm.prototype = {
     uniqueKey: parseInt(Math.random() * Math.pow(2, 16)),
@@ -87,8 +88,20 @@
         }
 
         .rich-confirm-buttons${this.uniqueKey} button {
+          background: ButtonFace;
+          border: 1px solid ThreeDShadow;
+          border-radius: 0;
+          color: ButtonText;
           display: block;
+          margin-bottom: 0.2em;
           width: 100%;
+        }
+        .rich-confirm-buttons${this.uniqueKey} button:focus {
+          background: Highlight;
+          color: HighlightText;
+        }
+        .rich-confirm-buttons${this.uniqueKey} button:focus::-moz-focus-inner {
+          border: none;
         }
 
         .rich-confirm-check-label${this.uniqueKey} {
@@ -155,9 +168,9 @@
       range.detach();
 
       this.ui.addEventListener('click', this.onClick);
+      window.addEventListener('keypress', this.onKeyPress, true);
       this.ui.classList.add('show');
 
-      this.deactivatePageNavigations();
       this.buttonsContainer.firstChild.focus();
 
       return new Promise((aResolve, aReject) => {
@@ -167,8 +180,8 @@
     },
 
     hide() {
-      this.reactivatePageNavigations();
       this.ui.removeEventListener('click', this.onClick);
+      window.removeEventListener('keypress', this.onKeyPress, true);
       delete this._resolve;
       delete this._rejecte;
       this.ui.classList.remove('show');
@@ -178,6 +191,14 @@
         delete this.ui;
         delete this.style;
       }, 1000);
+    },
+
+    dismiss() {
+      this._resolve({
+        buttonIndex: -1,
+        checked: !!this.params.message && this.checkCheckbox.checked
+      });
+      this.hide();
     },
 
     onClick(aEvent) {
@@ -203,33 +224,57 @@
       if (!aEvent.target.closest(`.rich-confirm-dialog${this.uniqueKey}`)) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
-        this._resolve({
-          buttonIndex: -1,
-          checked: !!this.params.message && this.checkCheckbox.checked
-        });
-        this.hide();
+        this.dismiss();
       }
     },
 
-    get allFocusables() {
-      return Array.slice(document.querySelectorAll(':any-link,button,input,textarea,select,summary'));
-    },
+    onKeyPress(aEvent) {
+      switch (aEvent.keyCode) {
+        case aEvent.DOM_VK_UP:
+        case aEvent.DOM_VK_PAGE_UP:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.advanceFocus(-1);
+          break;
 
-    deactivatePageNavigations() {
-      for (let element of this.allFocusables) {
-        if (element.closest(`.rich-confirm-dialog${this.uniqueKey}`))
-          continue;
-        element[`tabIndexBackup${this.uniqueKey}`] = element.tabIndex;
-        element.tabIndex = -1;
+        case aEvent.DOM_VK_DOWN:
+        case aEvent.DOM_VK_PAGE_DOWN:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.advanceFocus(1);
+          break;
+
+        case aEvent.DOM_VK_TAB:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.advanceFocus(aEvent.shiftKey ? -1 : 1);
+          break;
+
+        case aEvent.DOM_VK_ESCAPE:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.dismiss();
+          break;
+
+        default:
+          return;
       }
     },
 
-    reactivatePageNavigations() {
-      for (let element of this.allFocusables) {
-        if (element.closest(`.rich-confirm-dialog${this.uniqueKey}`))
-          continue;
-        element.tabIndex = element[`tabIndexBackup${this.uniqueKey}`];
-        delete element[`tabIndexBackup${this.uniqueKey}`];
+    advanceFocus(aDirection) {
+      const focusedButton = this.buttonsContainer.querySelector(':focus');
+      console.log('focusedButton ', focusedButton);
+      if (aDirection < 0) { // backward
+        if (!focusedButton)
+          this.buttonsContainer.lastChild.focus();
+        else
+          (focusedButton.previousSibling || this.checkCheckbox).focus();
+      }
+      else { // forward
+        if (!focusedButton)
+          this.buttonsContainer.firstChild.focus();
+        else
+          (focusedButton.nextSibling || this.checkCheckbox).focus();
       }
     }
   };
