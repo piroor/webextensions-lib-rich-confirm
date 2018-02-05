@@ -196,7 +196,7 @@
         return;
       }
 
-      if (!aEvent.target.closest(`.rich-confirm-dialog`)) {
+      if (!aEvent.target.closest(`.rich-confirm-dialog${this.uniqueKey}`)) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
         this._resolve({
