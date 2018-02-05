@@ -157,6 +157,9 @@
       this.ui.addEventListener('click', this.onClick);
       this.ui.classList.add('show');
 
+      this.deactivatePageNavigations();
+      this.buttonsContainer.firstChild.focus();
+
       return new Promise((aResolve, aReject) => {
         this._resolve = aResolve;
         this._rejecte = aReject;
@@ -164,6 +167,7 @@
     },
 
     hide() {
+      this.reactivatePageNavigations();
       this.ui.removeEventListener('click', this.onClick);
       delete this._resolve;
       delete this._rejecte;
@@ -204,6 +208,28 @@
           checked: !!this.params.message && this.checkCheckbox.checked
         });
         this.hide();
+      }
+    },
+
+    get allFocusables() {
+      return Array.slice(document.querySelectorAll(':any-link,button,input,textarea,select,summary'));
+    },
+
+    deactivatePageNavigations() {
+      for (let element of this.allFocusables) {
+        if (element.closest(`.rich-confirm-dialog${this.uniqueKey}`))
+          continue;
+        element[`tabIndexBackup${this.uniqueKey}`] = element.tabIndex;
+        element.tabIndex = -1;
+      }
+    },
+
+    reactivatePageNavigations() {
+      for (let element of this.allFocusables) {
+        if (element.closest(`.rich-confirm-dialog${this.uniqueKey}`))
+          continue;
+        element.tabIndex = element[`tabIndexBackup${this.uniqueKey}`];
+        delete element[`tabIndexBackup${this.uniqueKey}`];
       }
     }
   };
