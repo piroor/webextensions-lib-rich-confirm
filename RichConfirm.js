@@ -104,6 +104,11 @@
           border: none;
         }
 
+        .rich-confirm-buttons${this.uniqueKey} button:hover {
+          background: ActiveCaption;
+          color: CaptionText;
+        }
+
         .rich-confirm-check-label${this.uniqueKey} {
           display: flex;
           flex-direction: row;
