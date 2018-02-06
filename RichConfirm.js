@@ -287,16 +287,22 @@
       const focusedButton = this.buttonsContainer.querySelector(':focus');
       console.log('focusedButton ', focusedButton);
       if (aDirection < 0) { // backward
-        if (!focusedButton)
-          this.buttonsContainer.lastChild.focus();
+        if (focusedButton && focusedButton.previousSibling)
+          focusedButton.previousSibling.focus();
+        else if (this.params.checkMessage)
+          this.checkCheckbox.focus();
         else
-          (focusedButton.previousSibling || this.checkCheckbox).focus();
+          this.buttonsContainer.lastChild.focus();
       }
       else { // forward
         if (!focusedButton)
           this.buttonsContainer.firstChild.focus();
+        else if (focusedButton.nextSibling)
+          focusedButton.nextSibling.focus();
+        else if (this.params.checkMessage)
+          this.checkCheckbox.focus();
         else
-          (focusedButton.nextSibling || this.checkCheckbox).focus();
+          this.buttonsContainer.firstChild.focus();
       }
     }
   };
