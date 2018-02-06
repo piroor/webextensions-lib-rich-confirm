@@ -322,40 +322,40 @@
   };
   RichConfirm.showInTab = async function(aTabId, aParams) {
     try {
-    await browser.tabs.executeScript(aTabId, {
-      code: `
-        if (!window.RichConfirm)
-           (${defineRichConfirm.toSource()})();
-      `,
-      matchAboutBlank: true,
-      runAt:           'document_start'
-    });
-    browser.tabs.executeScript(aTabId, {
-      code: `
-      delete window.RichConfirm.result;
-      (async () => {
-        const confirm = new RichConfirm(${JSON.stringify(aParams)});
-        window.RichConfirm.result = await confirm.show();
-      })();
-    `,
-      matchAboutBlank: true,
-      runAt:           'document_start'
-    });
-    let result;
-    while (true) {
-      const results = await browser.tabs.executeScript(aTabId, {
-        code:            `window.RichConfirm.result`,
+      await browser.tabs.executeScript(aTabId, {
+        code: `
+          if (!window.RichConfirm)
+             (${defineRichConfirm.toSource()})();
+        `,
         matchAboutBlank: true,
         runAt:           'document_start'
       });
-      if (results.length > 0 &&
-        results[0] !== undefined) {
-        result = results[0];
-        break;
+      browser.tabs.executeScript(aTabId, {
+        code: `
+        delete window.RichConfirm.result;
+        (async () => {
+          const confirm = new RichConfirm(${JSON.stringify(aParams)});
+          window.RichConfirm.result = await confirm.show();
+        })();
+      `,
+        matchAboutBlank: true,
+        runAt:           'document_start'
+      });
+      let result;
+      while (true) {
+        const results = await browser.tabs.executeScript(aTabId, {
+          code:            `window.RichConfirm.result`,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        });
+        if (results.length > 0 &&
+          results[0] !== undefined) {
+          result = results[0];
+          break;
+        }
+        await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
       }
-      await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
-    }
-    return result;
+      return result;
     }
     catch(e) {
       return {
