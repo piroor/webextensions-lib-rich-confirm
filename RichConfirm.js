@@ -251,6 +251,21 @@
           this.advanceFocus(1);
           break;
 
+        case aEvent.DOM_VK_HOME:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.buttonsContainer.firstChild.focus();
+          break;
+
+        case aEvent.DOM_VK_END:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          if (this.params.checkMessage)
+            this.checkCheckbox.focus();
+          else
+            this.buttonsContainer.lastChild.focus();
+          break;
+
         case aEvent.DOM_VK_TAB:
           aEvent.stopPropagation();
           aEvent.preventDefault();
