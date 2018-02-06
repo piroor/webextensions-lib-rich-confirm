@@ -2,6 +2,10 @@
 
 Helps to provide confirmation dialog with checkbox.
 
+## Screenshots
+
+![(Screenshot of a confimation dialog with two buttons and a checkbox)](screenshots/with-check.png)
+
 ## Required permissions
 
  * `tabs` or `activeTab`, if you want to use `RichConfirm.show()`.
