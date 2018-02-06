@@ -102,6 +102,7 @@
           font: message-box;
           margin-bottom: 0.2em;
           padding: 0.4em;
+          text-align: center;
           width: 100%;
         }
         ${common}.rich-confirm-buttons button:focus {
