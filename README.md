@@ -8,7 +8,7 @@ Helps to provide confirmation dialog with checkbox.
 
 ## Required permissions
 
- * `tabs` or `activeTab`, if you want to use `RichConfirm.show()`.
+ * `tabs` or `activeTab`, if you want to use `RichConfirm.showInTab()`.
 
 ## Basic usage
 
