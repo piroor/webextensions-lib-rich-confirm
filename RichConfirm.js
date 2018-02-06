@@ -290,7 +290,7 @@
       if (aDirection < 0) { // backward
         if (focusedButton && focusedButton.previousSibling)
           focusedButton.previousSibling.focus();
-        else if (this.params.checkMessage)
+        else if (this.params.checkMessage && !this.checkCheckbox.matches(':focus'))
           this.checkCheckbox.focus();
         else
           this.buttonsContainer.lastChild.focus();
