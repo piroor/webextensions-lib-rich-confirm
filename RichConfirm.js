@@ -79,6 +79,7 @@
           border-radius: 0.5em;
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
           color: -moz-dialogtext;
+          font: message-box;
           margin: 0.5em;
           max-width: 20em;
           padding: 1em;
@@ -98,6 +99,7 @@
           border-radius: 0;
           color: ButtonText;
           display: block;
+          font: message-box;
           margin-bottom: 0.2em;
           padding: 0.4em;
           width: 100%;
