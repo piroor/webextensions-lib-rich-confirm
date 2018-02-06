@@ -236,6 +236,7 @@
     onKeyPress(aEvent) {
       switch (aEvent.keyCode) {
         case aEvent.DOM_VK_UP:
+        case aEvent.DOM_VK_LEFT:
         case aEvent.DOM_VK_PAGE_UP:
           aEvent.stopPropagation();
           aEvent.preventDefault();
@@ -243,6 +244,7 @@
           break;
 
         case aEvent.DOM_VK_DOWN:
+        case aEvent.DOM_VK_RIGHT:
         case aEvent.DOM_VK_PAGE_DOWN:
           aEvent.stopPropagation();
           aEvent.preventDefault();
