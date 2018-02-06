@@ -94,19 +94,20 @@
           color: ButtonText;
           display: block;
           margin-bottom: 0.2em;
+          padding: 0.4em;
           width: 100%;
         }
         .rich-confirm-buttons${this.uniqueKey} button:focus {
-          background: Highlight;
-          color: HighlightText;
+          border-color: Highlight;
         }
         .rich-confirm-buttons${this.uniqueKey} button:focus::-moz-focus-inner {
           border: none;
         }
 
         .rich-confirm-buttons${this.uniqueKey} button:hover {
-          background: ActiveCaption;
-          color: CaptionText;
+          background: Highlight;
+          border-color: ThreeDShadow;
+          color: HighlightText;
         }
 
         .rich-confirm-check-label${this.uniqueKey} {
