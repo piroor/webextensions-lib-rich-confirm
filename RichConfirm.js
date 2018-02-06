@@ -12,6 +12,7 @@
       this.params.buttons = ['OK'];
     this.onClick = this.onClick.bind(this);
     this.onKeyPress = this.onKeyPress.bind(this);
+    this.onUnload = this.onUnload.bind(this);
   }
   RichConfirm.prototype = {
     uniqueKey: parseInt(Math.random() * Math.pow(2, 16)),
@@ -98,19 +99,20 @@
           color: ButtonText;
           display: block;
           margin-bottom: 0.2em;
+          padding: 0.4em;
           width: 100%;
         }
         ${common}.rich-confirm-buttons button:focus {
-          background: Highlight;
-          color: HighlightText;
+          border-color: Highlight;
         }
         ${common}.rich-confirm-buttons button:focus::-moz-focus-inner {
           border: none;
         }
 
         ${common}.rich-confirm-buttons button:hover {
-          background: ActiveCaption;
-          color: CaptionText;
+          background: Highlight;
+          border-color: ThreeDShadow;
+          color: HighlightText;
         }
 
         ${common}.rich-confirm-check-label {
@@ -179,6 +181,8 @@
 
       this.ui.addEventListener('click', this.onClick);
       window.addEventListener('keypress', this.onKeyPress, true);
+      window.addEventListener('pagehide', this.onUnload);
+      window.addEventListener('beforeunload', this.onUnload);
       this.ui.classList.add('show');
 
       this.buttonsContainer.firstChild.focus();
@@ -192,6 +196,8 @@
     hide() {
       this.ui.removeEventListener('click', this.onClick);
       window.removeEventListener('keypress', this.onKeyPress, true);
+      window.removeEventListener('pagehide', this.onUnload);
+      window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
       delete this._rejecte;
       this.ui.classList.remove('show');
@@ -256,6 +262,21 @@
           this.advanceFocus(1);
           break;
 
+        case aEvent.DOM_VK_HOME:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          this.buttonsContainer.firstChild.focus();
+          break;
+
+        case aEvent.DOM_VK_END:
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          if (this.params.checkMessage)
+            this.checkCheckbox.focus();
+          else
+            this.buttonsContainer.lastChild.focus();
+          break;
+
         case aEvent.DOM_VK_TAB:
           aEvent.stopPropagation();
           aEvent.preventDefault();
@@ -273,20 +294,30 @@
       }
     },
 
+    onUnload() {
+      this.dismiss();
+    },
+
     advanceFocus(aDirection) {
       const focusedButton = this.buttonsContainer.querySelector(':focus');
       console.log('focusedButton ', focusedButton);
       if (aDirection < 0) { // backward
-        if (!focusedButton)
-          this.buttonsContainer.lastChild.focus();
+        if (focusedButton && focusedButton.previousSibling)
+          focusedButton.previousSibling.focus();
+        else if (this.params.checkMessage && !this.checkCheckbox.matches(':focus'))
+          this.checkCheckbox.focus();
         else
-          (focusedButton.previousSibling || this.checkCheckbox).focus();
+          this.buttonsContainer.lastChild.focus();
       }
       else { // forward
         if (!focusedButton)
           this.buttonsContainer.firstChild.focus();
+        else if (focusedButton.nextSibling)
+          focusedButton.nextSibling.focus();
+        else if (this.params.checkMessage)
+          this.checkCheckbox.focus();
         else
-          (focusedButton.nextSibling || this.checkCheckbox).focus();
+          this.buttonsContainer.firstChild.focus();
       }
     }
   };
@@ -295,40 +326,47 @@
     return confirm.show();
   };
   RichConfirm.showInTab = async function(aTabId, aParams) {
-    await browser.tabs.executeScript(aTabId, {
-      code: `
-        if (!window.RichConfirm)
-           (${defineRichConfirm.toSource()})();
-      `,
-      matchAboutBlank: true,
-      runAt:           'document_start'
-    });
-    browser.tabs.executeScript(aTabId, {
-      code: `
-      delete window.RichConfirm.result;
-      (async () => {
-        const confirm = new RichConfirm(${JSON.stringify(aParams)});
-        window.RichConfirm.result = await confirm.show();
-      })();
-    `,
-      matchAboutBlank: true,
-      runAt:           'document_start'
-    });
-    let result;
-    while (true) {
-      const results = await browser.tabs.executeScript(aTabId, {
-        code:            `window.RichConfirm.result`,
+    try {
+      await browser.tabs.executeScript(aTabId, {
+        code: `
+          if (!window.RichConfirm)
+             (${defineRichConfirm.toSource()})();
+        `,
         matchAboutBlank: true,
         runAt:           'document_start'
       });
-      if (results.length > 0 &&
-        results[0] !== undefined) {
-        result = results[0];
-        break;
+      browser.tabs.executeScript(aTabId, {
+        code: `
+        delete window.RichConfirm.result;
+        (async () => {
+          const confirm = new RichConfirm(${JSON.stringify(aParams)});
+          window.RichConfirm.result = await confirm.show();
+        })();
+      `,
+        matchAboutBlank: true,
+        runAt:           'document_start'
+      });
+      let result;
+      while (true) {
+        const results = await browser.tabs.executeScript(aTabId, {
+          code:            `window.RichConfirm.result`,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        });
+        if (results.length > 0 &&
+          results[0] !== undefined) {
+          result = results[0];
+          break;
+        }
+        await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
       }
-      await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
+      return result;
     }
-    return result;
+    catch(e) {
+      return {
+        buttonIndex: -1
+      };
+    }
   };
   window.RichConfirm = RichConfirm;
   return true; // this is required to run this script as a content script
