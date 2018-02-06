@@ -12,6 +12,7 @@
       this.params.buttons = ['OK'];
     this.onClick = this.onClick.bind(this);
     this.onKeyPress = this.onKeyPress.bind(this);
+    this.onUnload = this.onUnload.bind(this);
   }
   RichConfirm.prototype = {
     uniqueKey: parseInt(Math.random() * Math.pow(2, 16)),
@@ -175,6 +176,8 @@
 
       this.ui.addEventListener('click', this.onClick);
       window.addEventListener('keypress', this.onKeyPress, true);
+      window.addEventListener('pagehide', this.onUnload);
+      window.addEventListener('beforeunload', this.onUnload);
       this.ui.classList.add('show');
 
       this.buttonsContainer.firstChild.focus();
@@ -188,6 +191,8 @@
     hide() {
       this.ui.removeEventListener('click', this.onClick);
       window.removeEventListener('keypress', this.onKeyPress, true);
+      window.removeEventListener('pagehide', this.onUnload);
+      window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
       delete this._rejecte;
       this.ui.classList.remove('show');
@@ -284,6 +289,10 @@
       }
     },
 
+    onUnload() {
+      this.dismiss();
+    },
+
     advanceFocus(aDirection) {
       const focusedButton = this.buttonsContainer.querySelector(':focus');
       console.log('focusedButton ', focusedButton);
@@ -312,6 +321,7 @@
     return confirm.show();
   };
   RichConfirm.showInTab = async function(aTabId, aParams) {
+    try {
     await browser.tabs.executeScript(aTabId, {
       code: `
         if (!window.RichConfirm)
@@ -346,6 +356,12 @@
       await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
     }
     return result;
+    }
+    catch(e) {
+      return {
+        buttonIndex: -1
+      };
+    }
   };
   window.RichConfirm = RichConfirm;
   return true; // this is required to run this script as a content script
