@@ -15,31 +15,35 @@
   }
   RichConfirm.prototype = {
     uniqueKey: parseInt(Math.random() * Math.pow(2, 16)),
+    get commonClass() {
+      return `rich-confirm-${this.uniqueKey}`;
+    },
     get dialog() {
-      return this.ui.querySelector(`.rich-confirm-dialog${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-dialog`);
     },
     get message() {
-      return this.ui.querySelector(`.rich-confirm-message${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-message`);
     },
     get buttonsContainer() {
-      return this.ui.querySelector(`.rich-confirm-buttons${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-buttons`);
     },
     get checkContainer() {
-      return this.ui.querySelector(`.rich-confirm-check-label${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-check-label`);
     },
     get checkCheckbox() {
-      return this.ui.querySelector(`.rich-confirm-check-checkbox${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-check-checkbox`);
     },
     get checkMessage() {
-      return this.ui.querySelector(`.rich-confirm-check-message${this.uniqueKey}`);
+      return this.ui.querySelector(`.rich-confirm-check-message`);
     },
 
     buildUI() {
       this.style = document.createElement('style');
       this.style.setAttribute('type', 'text/css');
+      const common = `.${this.commonClass}`;
       this.style.textContent = `
-        .rich-confirm${this.uniqueKey},
-        .rich-confirm-row${this.uniqueKey} {
+        ${common}.rich-confirm,
+        ${common}.rich-confirm-row {
           align-items: center;
           bottom: 0;
           display: flex;
@@ -51,7 +55,7 @@
           top: 0;
         }
 
-        .rich-confirm${this.uniqueKey} {
+        ${common}.rich-confirm {
           background: rgba(0, 0, 0, 0.45);
           left:0;
           opacity: 0;
@@ -60,16 +64,16 @@
           z-index: 999997;
         }
 
-        .rich-confirm${this.uniqueKey}.show {
+        ${common}.rich-confirm.show {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .rich-confirm-row${this.uniqueKey} {
+        ${common}.rich-confirm-row {
           z-index: 999998;
         }
 
-        .rich-confirm-dialog${this.uniqueKey} {
+        ${common}.rich-confirm-dialog {
           background: -moz-dialog;
           border-radius: 0.5em;
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
@@ -80,14 +84,14 @@
           z-index: 999999;
         }
 
-        .rich-confirm-buttons${this.uniqueKey} {
+        ${common}.rich-confirm-buttons {
           align-items: stretch;
           flex-direction: column;
           justify-content: center;
           margin: 0.5em 0 0;
         }
 
-        .rich-confirm-buttons${this.uniqueKey} button {
+        ${common}.rich-confirm-buttons button {
           background: ButtonFace;
           border: 1px solid ThreeDShadow;
           border-radius: 0;
@@ -96,26 +100,26 @@
           margin-bottom: 0.2em;
           width: 100%;
         }
-        .rich-confirm-buttons${this.uniqueKey} button:focus {
+        ${common}.rich-confirm-buttons button:focus {
           background: Highlight;
           color: HighlightText;
         }
-        .rich-confirm-buttons${this.uniqueKey} button:focus::-moz-focus-inner {
+        ${common}.rich-confirm-buttons button:focus::-moz-focus-inner {
           border: none;
         }
 
-        .rich-confirm-buttons${this.uniqueKey} button:hover {
+        ${common}.rich-confirm-buttons button:hover {
           background: ActiveCaption;
           color: CaptionText;
         }
 
-        .rich-confirm-check-label${this.uniqueKey} {
+        ${common}.rich-confirm-check-label {
           display: flex;
           flex-direction: row;
           margin-top: 0.5em;
         }
 
-        .rich-confirm-check-label${this.uniqueKey}.hidden {
+        ${common}.rich-confirm-check-label.hidden {
           display: none;
         }
       `;
@@ -124,16 +128,17 @@
       var range = document.createRange();
       range.selectNodeContents(document.body);
       range.collapse(false);
+      const commonClass = this.commonClass;
       var fragment = range.createContextualFragment(`
-        <div class="rich-confirm${this.uniqueKey}">
-          <div class="rich-confirm-row${this.uniqueKey}">
-            <div class="rich-confirm-dialog${this.uniqueKey}">
-              <span class="rich-confirm-message${this.uniqueKey}"></span>
-              <div class="rich-confirm-buttons${this.uniqueKey}"></div>
-              <label class="rich-confirm-check-label${this.uniqueKey}">
+        <div class="rich-confirm ${commonClass}">
+          <div class="rich-confirm-row ${commonClass}">
+            <div class="rich-confirm-dialog ${commonClass}">
+              <span class="rich-confirm-message ${commonClass}"></span>
+              <div class="rich-confirm-buttons ${commonClass}"></div>
+              <label class="rich-confirm-check-label ${commonClass}">
                 <input type="checkbox"
-                       class="rich-confirm-check-checkbox${this.uniqueKey}">
-                <span class="rich-confirm-check-message${this.uniqueKey}"></span>
+                       class="rich-confirm-check-checkbox ${commonClass}">
+                <span class="rich-confirm-check-message ${commonClass}"></span>
               </label>
             </div>
           </div>
@@ -226,7 +231,7 @@
         return;
       }
 
-      if (!aEvent.target.closest(`.rich-confirm-dialog${this.uniqueKey}`)) {
+      if (!aEvent.target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
         this.dismiss();
