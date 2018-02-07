@@ -76,7 +76,6 @@
 
         ${common}.rich-confirm-dialog {
           background: -moz-dialog;
-          border-radius: 0.5em;
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
           color: -moz-dialogtext;
           font: message-box;
