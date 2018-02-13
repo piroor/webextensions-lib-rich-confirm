@@ -80,7 +80,9 @@
           color: -moz-dialogtext;
           font: message-box;
           margin: 0.5em;
-          max-width: 20em;
+          max-height: 90%;
+          max-width: 90%;
+          overflow: auto;
           padding: 1em;
           z-index: 999999;
         }
