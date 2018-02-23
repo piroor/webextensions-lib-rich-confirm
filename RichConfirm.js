@@ -250,16 +250,16 @@
 
     onKeyPress(aEvent) {
       switch (aEvent.key) {
-        case 'ArrowUp'
-        case 'ArrowLeft'
+        case 'ArrowUp':
+        case 'ArrowLeft':
         case 'PageUp':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(-1);
           break;
 
-        case 'ArrowDown'
-        case 'ArrowRight'
+        case 'ArrowDown':
+        case 'ArrowRight':
         case 'PageDown':
           aEvent.stopPropagation();
           aEvent.preventDefault();
