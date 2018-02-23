@@ -249,30 +249,30 @@
     },
 
     onKeyPress(aEvent) {
-      switch (aEvent.keyCode) {
-        case aEvent.DOM_VK_UP:
-        case aEvent.DOM_VK_LEFT:
-        case aEvent.DOM_VK_PAGE_UP:
+      switch (aEvent.key) {
+        case 'ArrowUp'
+        case 'ArrowLeft'
+        case 'PageUp':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(-1);
           break;
 
-        case aEvent.DOM_VK_DOWN:
-        case aEvent.DOM_VK_RIGHT:
-        case aEvent.DOM_VK_PAGE_DOWN:
+        case 'ArrowDown'
+        case 'ArrowRight'
+        case 'PageDown':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(1);
           break;
 
-        case aEvent.DOM_VK_HOME:
+        case 'Home':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.buttonsContainer.firstChild.focus();
           break;
 
-        case aEvent.DOM_VK_END:
+        case 'End':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           if (this.params.checkMessage)
@@ -281,13 +281,13 @@
             this.buttonsContainer.lastChild.focus();
           break;
 
-        case aEvent.DOM_VK_TAB:
+        case 'Tab':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(aEvent.shiftKey ? -1 : 1);
           break;
 
-        case aEvent.DOM_VK_ESCAPE:
+        case 'Escape':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.dismiss();
