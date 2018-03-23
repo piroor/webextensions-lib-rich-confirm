@@ -54,5 +54,5 @@ var result = await RichConfirm.showInTab(10, {
 });
 ```
 
-The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`.
+The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will appear in the current tab.
 
