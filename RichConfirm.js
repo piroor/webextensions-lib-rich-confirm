@@ -330,6 +330,10 @@
     return confirm.show();
   };
   RichConfirm.showInTab = async function(aTabId, aParams) {
+    if (!aParams) {
+      aParams = aTabId;
+      aTabId = await browser.tabs.getCurrent();
+    }
     try {
       await browser.tabs.executeScript(aTabId, {
         code: `
