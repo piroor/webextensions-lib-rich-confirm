@@ -11,6 +11,7 @@
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
     this.onClick = this.onClick.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
     this.onUnload = this.onUnload.bind(this);
   }
@@ -184,6 +185,7 @@
       range.detach();
 
       this.ui.addEventListener('click', this.onClick);
+      window.addEventListener('keydown', this.onKeyDown, true);
       window.addEventListener('keyup', this.onKeyUp, true);
       window.addEventListener('pagehide', this.onUnload);
       window.addEventListener('beforeunload', this.onUnload);
@@ -199,6 +201,7 @@
 
     hide() {
       this.ui.removeEventListener('click', this.onClick);
+      window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
       window.removeEventListener('pagehide', this.onUnload);
       window.removeEventListener('beforeunload', this.onUnload);
@@ -245,6 +248,27 @@
         aEvent.stopPropagation();
         aEvent.preventDefault();
         this.dismiss();
+      }
+    },
+
+    onKeyDown(aEvent) {
+      switch (aEvent.key) {
+        case 'ArrowUp':
+        case 'ArrowLeft':
+        case 'PageUp':
+        case 'ArrowDown':
+        case 'ArrowRight':
+        case 'PageDown':
+        case 'Home':
+        case 'End':
+        case 'Tab':
+        case 'Escape':
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
+          break;
+
+        default:
+          return;
       }
     },
 
