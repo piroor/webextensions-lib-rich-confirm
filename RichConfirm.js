@@ -11,7 +11,7 @@
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
     this.onClick = this.onClick.bind(this);
-    this.onKeyPress = this.onKeyPress.bind(this);
+    this.onKeyUp = this.onKeyUp.bind(this);
     this.onUnload = this.onUnload.bind(this);
   }
   RichConfirm.prototype = {
