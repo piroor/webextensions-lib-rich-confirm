@@ -256,27 +256,6 @@
         case 'ArrowUp':
         case 'ArrowLeft':
         case 'PageUp':
-        case 'ArrowDown':
-        case 'ArrowRight':
-        case 'PageDown':
-        case 'Home':
-        case 'End':
-        case 'Tab':
-        case 'Escape':
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
-          break;
-
-        default:
-          return;
-      }
-    },
-
-    onKeyUp(aEvent) {
-      switch (aEvent.key) {
-        case 'ArrowUp':
-        case 'ArrowLeft':
-        case 'PageUp':
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(-1);
@@ -315,6 +294,27 @@
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.dismiss();
+          break;
+
+        default:
+          return;
+      }
+    },
+
+    onKeyUp(aEvent) {
+      switch (aEvent.key) {
+        case 'ArrowUp':
+        case 'ArrowLeft':
+        case 'PageUp':
+        case 'ArrowDown':
+        case 'ArrowRight':
+        case 'PageDown':
+        case 'Home':
+        case 'End':
+        case 'Tab':
+        case 'Escape':
+          aEvent.stopPropagation();
+          aEvent.preventDefault();
           break;
 
         default:
