@@ -184,7 +184,7 @@
       range.detach();
 
       this.ui.addEventListener('click', this.onClick);
-      window.addEventListener('keypress', this.onKeyPress, true);
+      window.addEventListener('keyup', this.onKeyUp, true);
       window.addEventListener('pagehide', this.onUnload);
       window.addEventListener('beforeunload', this.onUnload);
       this.ui.classList.add('show');
@@ -199,7 +199,7 @@
 
     hide() {
       this.ui.removeEventListener('click', this.onClick);
-      window.removeEventListener('keypress', this.onKeyPress, true);
+      window.removeEventListener('keyup', this.onKeyUp, true);
       window.removeEventListener('pagehide', this.onUnload);
       window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
@@ -248,7 +248,7 @@
       }
     },
 
-    onKeyPress(aEvent) {
+    onKeyUp(aEvent) {
       switch (aEvent.key) {
         case 'ArrowUp':
         case 'ArrowLeft':
