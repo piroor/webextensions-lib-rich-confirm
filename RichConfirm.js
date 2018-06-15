@@ -132,11 +132,11 @@
       `;
       document.head.appendChild(this.style);
 
-      var range = document.createRange();
+      const range = document.createRange();
       range.selectNodeContents(document.body);
       range.collapse(false);
       const commonClass = this.commonClass;
-      var fragment = range.createContextualFragment(`
+      const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
             <div class="rich-confirm-dialog ${commonClass}">
@@ -171,10 +171,10 @@
         this.checkContainer.classList.add('hidden');
       }
 
-      var range = document.createRange();
+      const range = document.createRange();
       range.selectNodeContents(this.buttonsContainer);
       range.deleteContents();
-      var buttons = document.createDocumentFragment();
+      const buttons = document.createDocumentFragment();
       for (const label of this.params.buttons) {
         const button = document.createElement('button');
         button.textContent = label;
@@ -231,7 +231,7 @@
         return;
       }
 
-      var button = aEvent.target.closest('button');
+      const button = aEvent.target.closest('button');
       if (button) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
