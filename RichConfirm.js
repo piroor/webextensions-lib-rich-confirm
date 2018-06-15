@@ -175,8 +175,8 @@
       range.selectNodeContents(this.buttonsContainer);
       range.deleteContents();
       var buttons = document.createDocumentFragment();
-      for (let label of this.params.buttons) {
-        let button = document.createElement('button');
+      for (const label of this.params.buttons) {
+        const button = document.createElement('button');
         button.textContent = label;
         button.setAttribute('title', label);
         buttons.appendChild(button);
@@ -235,7 +235,7 @@
       if (button) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
-        let buttonIndex = Array.slice(this.buttonsContainer.childNodes).indexOf(button);
+        const buttonIndex = Array.slice(this.buttonsContainer.childNodes).indexOf(button);
         this._resolve({
           buttonIndex,
           checked: !!this.params.message && this.checkCheckbox.checked
