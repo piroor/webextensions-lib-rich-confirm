@@ -8,14 +8,14 @@
 (function defineRichConfirm() {
   class RichConfirm {
     constructor(aParams) {
-    this.params = aParams;
-    if (!this.params.buttons)
-      this.params.buttons = ['OK'];
-    this.onClick = this.onClick.bind(this);
-    this.onKeyDown = this.onKeyDown.bind(this);
-    this.onKeyUp = this.onKeyUp.bind(this);
-    this.onUnload = this.onUnload.bind(this);
-  }
+      this.params = aParams;
+      if (!this.params.buttons)
+        this.params.buttons = ['OK'];
+      this.onClick = this.onClick.bind(this);
+      this.onKeyDown = this.onKeyDown.bind(this);
+      this.onKeyUp = this.onKeyUp.bind(this);
+      this.onUnload = this.onUnload.bind(this);
+    }
     get commonClass() {
       return `rich-confirm-${this.uniqueKey}`;
     }
@@ -349,55 +349,55 @@
     }
 
     static async show(aParams) {
-    const confirm = new this(aParams);
-    return confirm.show();
-  }
-    static async showInTab(aTabId, aParams) {
-    if (!aParams) {
-      aParams = aTabId;
-      aTabId = await browser.tabs.getCurrent();
+      const confirm = new this(aParams);
+      return confirm.show();
     }
-    try {
-      await browser.tabs.executeScript(aTabId, {
-        code: `
-          if (!window.RichConfirm)
-             (${defineRichConfirm.toSource()})();
-        `,
-        matchAboutBlank: true,
-        runAt:           'document_start'
-      });
-      browser.tabs.executeScript(aTabId, {
-        code: `
-        delete window.RichConfirm.result;
-        (async () => {
-          const confirm = new RichConfirm(${JSON.stringify(aParams)});
-          window.RichConfirm.result = await confirm.show();
-        })();
-      `,
-        matchAboutBlank: true,
-        runAt:           'document_start'
-      });
-      let result;
-      while (true) {
-        const results = await browser.tabs.executeScript(aTabId, {
-          code:            `window.RichConfirm.result`,
+    static async showInTab(aTabId, aParams) {
+      if (!aParams) {
+        aParams = aTabId;
+        aTabId = await browser.tabs.getCurrent();
+      }
+      try {
+        await browser.tabs.executeScript(aTabId, {
+          code: `
+            if (!window.RichConfirm)
+               (${defineRichConfirm.toSource()})();
+          `,
           matchAboutBlank: true,
           runAt:           'document_start'
         });
-        if (results.length > 0 &&
+        browser.tabs.executeScript(aTabId, {
+          code: `
+            delete window.RichConfirm.result;
+            (async () => {
+              const confirm = new RichConfirm(${JSON.stringify(aParams)});
+              window.RichConfirm.result = await confirm.show();
+            })();
+          `,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        });
+        let result;
+        while (true) {
+          const results = await browser.tabs.executeScript(aTabId, {
+            code:            `window.RichConfirm.result`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          });
+          if (results.length > 0 &&
           results[0] !== undefined) {
-          result = results[0];
-          break;
+            result = results[0];
+            break;
+          }
+          await new Promise((aResolve, _aReject) => setTimeout(aResolve, 100));
         }
-        await new Promise((aResolve, _aReject) => setTimeout(aResolve, 100));
+        return result;
       }
-      return result;
-    }
-    catch(_e) {
-      return {
-        buttonIndex: -1
-      };
-    }
+      catch(_e) {
+        return {
+          buttonIndex: -1
+        };
+      }
     }
   };
   RichConfirm.prototype.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
