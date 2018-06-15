@@ -6,7 +6,8 @@
 'use strict';
 
 (function defineRichConfirm() {
-  const RichConfirm = function(aParams) {
+  class RichConfirm {
+    constructor(aParams) {
     this.params = aParams;
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
@@ -15,29 +16,27 @@
     this.onKeyUp = this.onKeyUp.bind(this);
     this.onUnload = this.onUnload.bind(this);
   }
-  RichConfirm.prototype = {
-    uniqueKey: parseInt(Math.random() * Math.pow(2, 16)),
     get commonClass() {
       return `rich-confirm-${this.uniqueKey}`;
-    },
+    }
     get dialog() {
       return this.ui.querySelector(`.rich-confirm-dialog`);
-    },
+    }
     get message() {
       return this.ui.querySelector(`.rich-confirm-message`);
-    },
+    }
     get buttonsContainer() {
       return this.ui.querySelector(`.rich-confirm-buttons`);
-    },
+    }
     get checkContainer() {
       return this.ui.querySelector(`.rich-confirm-check-label`);
-    },
+    }
     get checkCheckbox() {
       return this.ui.querySelector(`.rich-confirm-check-checkbox`);
-    },
+    }
     get checkMessage() {
       return this.ui.querySelector(`.rich-confirm-check-message`);
-    },
+    }
 
     buildUI() {
       this.style = document.createElement('style');
@@ -154,9 +153,9 @@
       range.insertNode(fragment);
       range.detach();
       this.ui = document.body.lastElementChild;
-    },
+    }
 
-    show: async function() {
+    async show() {
       this.buildUI();
       await new Promise((aResolve, _aReject) => setTimeout(aResolve, 0));
 
@@ -197,7 +196,7 @@
         this._resolve = aResolve;
         this._rejecte = aReject;
       });
-    },
+    }
 
     hide() {
       this.ui.removeEventListener('click', this.onClick);
@@ -214,7 +213,7 @@
         delete this.ui;
         delete this.style;
       }, 1000);
-    },
+    }
 
     dismiss() {
       this._resolve({
@@ -222,7 +221,7 @@
         checked: !!this.params.message && this.checkCheckbox.checked
       });
       this.hide();
-    },
+    }
 
     onClick(aEvent) {
       if (aEvent.button != 0) {
@@ -249,7 +248,7 @@
         aEvent.preventDefault();
         this.dismiss();
       }
-    },
+    }
 
     onKeyDown(aEvent) {
       switch (aEvent.key) {
@@ -299,7 +298,7 @@
         default:
           return;
       }
-    },
+    }
 
     onKeyUp(aEvent) {
       switch (aEvent.key) {
@@ -320,11 +319,11 @@
         default:
           return;
       }
-    },
+    }
 
     onUnload() {
       this.dismiss();
-    },
+    }
 
     advanceFocus(aDirection) {
       const focusedButton = this.buttonsContainer.querySelector(':focus');
@@ -348,12 +347,12 @@
           this.buttonsContainer.firstChild.focus();
       }
     }
-  };
-  RichConfirm.show = async function(aParams) {
+
+    static async show(aParams) {
     const confirm = new this(aParams);
     return confirm.show();
-  };
-  RichConfirm.showInTab = async function(aTabId, aParams) {
+  }
+    static async showInTab(aTabId, aParams) {
     if (!aParams) {
       aParams = aTabId;
       aTabId = await browser.tabs.getCurrent();
@@ -399,7 +398,9 @@
         buttonIndex: -1
       };
     }
+    }
   };
+  RichConfirm.prototype.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
   window.RichConfirm = RichConfirm;
   return true; // this is required to run this script as a content script
 })();
