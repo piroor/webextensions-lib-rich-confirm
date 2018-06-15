@@ -234,7 +234,7 @@
       if (button) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
-        const buttonIndex = Array.slice(this.buttonsContainer.childNodes).indexOf(button);
+        const buttonIndex = Array.from(this.buttonsContainer.childNodes).indexOf(button);
         this._resolve({
           buttonIndex,
           checked: !!this.params.message && this.checkCheckbox.checked
