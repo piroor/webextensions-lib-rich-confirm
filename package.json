@@ -1,5 +1,5 @@
 {
-  "name": "webextensions-lib-options",
+  "name": "webextensions-lib-rich-confirm",
   "version": "0.0.0",
   "engines": {
     "node": ">=8.6.0"
