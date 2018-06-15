@@ -158,7 +158,7 @@
 
     show: async function() {
       this.buildUI();
-      await new Promise((aResolve, aReject) => setTimeout(aResolve, 0));
+      await new Promise((aResolve, _aReject) => setTimeout(aResolve, 0));
 
       this.message.textContent = this.params.message;
 
@@ -390,11 +390,11 @@
           result = results[0];
           break;
         }
-        await new Promise((aResolve, aReject) => setTimeout(aResolve, 100));
+        await new Promise((aResolve, _aReject) => setTimeout(aResolve, 100));
       }
       return result;
     }
-    catch(e) {
+    catch(_e) {
       return {
         buttonIndex: -1
       };
