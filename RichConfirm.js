@@ -35,7 +35,11 @@
       return this.ui.querySelector(`.rich-confirm-check-checkbox`);
     }
     get checkMessage() {
-      return this.ui.querySelector(`.rich-confirm-check-message`);
+      return this.ui.querySelector('.rich-confirm-check-message');
+    }
+
+    get focusTargets() {
+      return Array.slice(this.ui.querySelectorAll('input:not([type="hidden"]), select, button')).filter(node => node.offsetWidth > 0);
     }
 
     buildUI() {
@@ -327,25 +331,20 @@
     }
 
     advanceFocus(aDirection) {
-      const focusedButton = this.buttonsContainer.querySelector(':focus');
-      console.log('focusedButton ', focusedButton);
+      const focusedItem = this.ui.querySelector(':focus');
+      console.log('focusedItem ', focusedItem);
+      const targets = this.focusTargets;
+      console.log('focusTargets ', targets);
+      let index = focusedItem ? targets.indexOf(focusedItem) : -1;
       if (aDirection < 0) { // backward
-        if (focusedButton && focusedButton.previousSibling)
-          focusedButton.previousSibling.focus();
-        else if (this.params.checkMessage && !this.checkCheckbox.matches(':focus'))
-          this.checkCheckbox.focus();
-        else
-          this.buttonsContainer.lastChild.focus();
+        const nextFocused = index < 0 ? targets[targets.length-1] :
+          targets[index == 0 ? targets.length-1 : index-1];
+        nextFocused.focus();
       }
       else { // forward
-        if (!focusedButton)
-          this.buttonsContainer.firstChild.focus();
-        else if (focusedButton.nextSibling)
-          focusedButton.nextSibling.focus();
-        else if (this.params.checkMessage)
-          this.checkCheckbox.focus();
-        else
-          this.buttonsContainer.firstChild.focus();
+        const nextFocused = index < 0 ? targets[0] :
+          targets[index == targets.length-1 ? 0 : index+1];
+        nextFocused.focus();
       }
     }
 
