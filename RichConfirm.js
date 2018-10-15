@@ -14,6 +14,7 @@
       this.onClick = this.onClick.bind(this);
       this.onKeyDown = this.onKeyDown.bind(this);
       this.onKeyUp = this.onKeyUp.bind(this);
+      this.onContextMenu = this.onContextMenu.bind(this);
       this.onUnload = this.onUnload.bind(this);
     }
     get commonClass() {
@@ -407,8 +408,11 @@
       if (target.nodeType == Node.TEXT_NODE)
         target = target.parentNode;
       const onContent = target.closest(`.rich-confirm-content.${this.commonClass}`);
-      if (!onContent || !target.closest('input, textarea'))
+      if (!onContent || !target.closest('input, textarea')) {
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }
     }
 
     onUnload() {
