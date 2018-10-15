@@ -218,7 +218,7 @@
     dismiss() {
       this._resolve({
         buttonIndex: -1,
-        checked: !!this.params.message && this.checkCheckbox.checked
+        checked: !!this.params.checkMessage && this.checkCheckbox.checked
       });
       this.hide();
     }
@@ -237,7 +237,7 @@
         const buttonIndex = Array.from(this.buttonsContainer.childNodes).indexOf(button);
         this._resolve({
           buttonIndex,
-          checked: !!this.params.message && this.checkCheckbox.checked
+          checked: !!this.params.checkMessage && this.checkCheckbox.checked
         });
         this.hide();
         return;
