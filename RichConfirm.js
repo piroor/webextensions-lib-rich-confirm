@@ -20,19 +20,19 @@
       return `rich-confirm-${this.uniqueKey}`;
     }
     get dialog() {
-      return this.ui.querySelector(`.rich-confirm-dialog`);
+      return this.ui.querySelector('.rich-confirm-dialog');
     }
     get content() {
-      return this.ui.querySelector(`.rich-confirm-content`);
+      return this.ui.querySelector('.rich-confirm-content');
     }
     get buttonsContainer() {
-      return this.ui.querySelector(`.rich-confirm-buttons`);
+      return this.ui.querySelector('.rich-confirm-buttons');
     }
     get checkContainer() {
-      return this.ui.querySelector(`.rich-confirm-check-label`);
+      return this.ui.querySelector('.rich-confirm-check-label');
     }
     get checkCheckbox() {
-      return this.ui.querySelector(`.rich-confirm-check-checkbox`);
+      return this.ui.querySelector('.rich-confirm-check-checkbox');
     }
     get checkMessage() {
       return this.ui.querySelector('.rich-confirm-check-message');
