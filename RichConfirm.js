@@ -199,6 +199,7 @@
       this.ui.addEventListener('click', this.onClick);
       window.addEventListener('keydown', this.onKeyDown, true);
       window.addEventListener('keyup', this.onKeyUp, true);
+      window.addEventListener('contextmenu', this.onContextMenu, true);
       window.addEventListener('pagehide', this.onUnload);
       window.addEventListener('beforeunload', this.onUnload);
       this.ui.classList.add('show');
@@ -232,6 +233,7 @@
       this.ui.removeEventListener('click', this.onClick);
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
+      window.removeEventListener('contextmenu', this.onContextMenu, true);
       window.removeEventListener('pagehide', this.onUnload);
       window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
@@ -398,6 +400,15 @@
         default:
           return;
       }
+    }
+
+    onContextMenu(event) {
+      let target = event.target;
+      if (target.nodeType == Node.TEXT_NODE)
+        target = target.parentNode;
+      const onContent = target.closest(`.rich-confirm-content.${this.commonClass}`);
+      if (!onContent || !target.closest('input, textarea'))
+        event.preventDefault();
     }
 
     onUnload() {
