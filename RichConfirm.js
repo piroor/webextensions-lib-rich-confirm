@@ -169,7 +169,6 @@
       if (this.params.content) {
         range.selectNodeContents(this.content);
         range.collapse(false);
-        const commonClass = this.commonClass;
         const fragment = range.createContextualFragment(this.params.content);
         range.insertNode(fragment);
       }
