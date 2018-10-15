@@ -22,8 +22,8 @@
     get dialog() {
       return this.ui.querySelector(`.rich-confirm-dialog`);
     }
-    get message() {
-      return this.ui.querySelector(`.rich-confirm-message`);
+    get content() {
+      return this.ui.querySelector(`.rich-confirm-content`);
     }
     get buttonsContainer() {
       return this.ui.querySelector(`.rich-confirm-buttons`);
@@ -139,7 +139,7 @@
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
             <div class="rich-confirm-dialog ${commonClass}">
-              <span class="rich-confirm-message ${commonClass}"></span>
+              <div class="rich-confirm-content ${commonClass}"></div>
               <div class="rich-confirm-buttons ${commonClass}"></div>
               <label class="rich-confirm-check-label ${commonClass}">
                 <input type="checkbox"
@@ -159,7 +159,8 @@
       this.buildUI();
       await new Promise((aResolve, _aReject) => setTimeout(aResolve, 0));
 
-      this.message.textContent = this.params.message;
+      if (this.params.message)
+        this.content.textContent = this.params.message;
 
       if (this.params.checkMessage) {
         this.checkMessage.textContent = this.params.checkMessage;
