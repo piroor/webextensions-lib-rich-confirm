@@ -33,15 +33,61 @@ var result = await RichConfirm.show({
 
 Here is the list of parameters:
 
- * `message` (required): A message for the confirmation dialog. (`String`)
+ * `message` (optional): A message for the confirmation dialog. This parameter is exclusive with `content`. (`String`)
  * `buttons` (required): Labels for buttons. (`Array` of `String`s)
  * `checkMessage` (optional): A label for the checkbox. (`String`)
  * `checked` (optional): Default state of the checkbox. (`Boolean`)
+
+And there are more advanced parameters. See also the "Advanced usage" section.
+
+ * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This parameter is exclusive with `message`. (`String`)
+ * `onShown` (optional): Event handler when the dialog is shown. (`Function`)
+ * `onHidden` (optional): Event handler when the dialog is hidden. (`Function`)
 
 `RichConfirm.show()` returns a `Promise`. It will be resolved with an object with following attributes:
 
  * `buttonIndex`: The index of the button which is clicked. `-1` if the confirmation dialog is dismissed.
  * `checked`: The state of the checkbox.
+ * `values`: The hash of values collected from input fields generated from the `content` parameter.
+
+## Advanced usage
+
+You can show a dialog with your favorite UI elements. For example:
+
+```javascript
+var title  = 'example';
+var url    = 'http://example.com/';
+var result = await RichConfirm.show({
+  content: `
+    <p><label>Name:
+              <input type="text"
+                     name="title"
+                     value=${JSON.stringify(title)}></label></p>
+    <p><label>Location:
+              <input type="text"
+                     name="url"
+                     value=${JSON.stringify(url)}></label></p>
+  `,
+  onShown(container) {
+    // This handler recenves the container element of contents
+    // generated from the "content" parameter.
+    // You can register listeners to generated fields or
+    // do more initialization, like:
+    // container.querySelector('input[name="title"]').addEventListener(...);
+  },
+  onHidden(container) {
+    // You can destroy generated fields when the dialog is
+    // closed, like:
+    // container.querySelector('input[name="title"]').removeEventListener(...);
+  },
+  buttons: ['Save', 'Cancel']
+});
+
+// The result object has a hash "values" with properties
+// same to "name" or "id" of generated fields.
+console.log(result.values.title);
+console.log(result.values.url);
+```
 
 ## Confirmation in the content area
 
