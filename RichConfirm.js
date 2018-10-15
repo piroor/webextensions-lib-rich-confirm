@@ -7,8 +7,8 @@
 
 (function defineRichConfirm() {
   class RichConfirm {
-    constructor(aParams) {
-      this.params = aParams;
+    constructor(params) {
+      this.params = params;
       if (!this.params.buttons)
         this.params.buttons = ['OK'];
       this.onClick = this.onClick.bind(this);
@@ -162,7 +162,7 @@
 
     async show() {
       this.buildUI();
-      await new Promise((aResolve, _aReject) => setTimeout(aResolve, 0));
+      await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
       const range = document.createRange();
 
@@ -216,9 +216,9 @@
         }
       }
 
-      return new Promise((aResolve, aReject) => {
-        this._resolve = aResolve;
-        this._rejecte = aReject;
+      return new Promise((resolve, reject) => {
+        this._resolve = resolve;
+        this._rejecte = reject;
       });
     }
 
@@ -258,8 +258,8 @@
       return this.hide();
     }
 
-    onClick(aEvent) {
-      let target = aEvent.target;
+    onClick(event) {
+      let target = event.target;
       if (target.nodeType == Node.TEXT_NODE)
         target = target.parentNode;
 
@@ -267,16 +267,16 @@
           target.closest('input, textarea, select, button'))
         return;
 
-      if (aEvent.button != 0) {
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
+      if (event.button != 0) {
+        event.stopPropagation();
+        event.preventDefault();
         return;
       }
 
       const button = target.closest('button');
       if (button) {
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
+        event.stopPropagation();
+        event.preventDefault();
         const buttonIndex = Array.from(this.buttonsContainer.childNodes).indexOf(button);
         const values = {};
         for (const field of this.content.querySelectorAll('[id], [name]')) {
@@ -306,26 +306,26 @@
       }
 
       if (!target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
-        aEvent.stopPropagation();
-        aEvent.preventDefault();
+        event.stopPropagation();
+        event.preventDefault();
         this.dismiss();
       }
     }
 
-    onKeyDown(aEvent) {
-      let target = aEvent.target;
+    onKeyDown(event) {
+      let target = event.target;
       if (target.nodeType == Node.TEXT_NODE)
         target = target.parentNode;
       const onContent = target.closest(`.rich-confirm-content.${this.commonClass}`);
 
-      switch (aEvent.key) {
+      switch (event.key) {
         case 'ArrowUp':
         case 'ArrowLeft':
         case 'PageUp':
           if (onContent)
             break;
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           this.advanceFocus(-1);
           break;
 
@@ -334,44 +334,44 @@
         case 'PageDown':
           if (onContent)
             break;
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           this.advanceFocus(1);
           break;
 
         case 'Home':
           if (onContent)
             break;
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           this.focusTargets[0].focus();
           break;
 
         case 'End':
           if (onContent)
             break;
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           const targets = this.focusTargets;
           targets[targets.length-1].focus();
           break;
 
         case 'Tab':
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
-          this.advanceFocus(aEvent.shiftKey ? -1 : 1);
+          event.stopPropagation();
+          event.preventDefault();
+          this.advanceFocus(event.shiftKey ? -1 : 1);
           break;
 
         case 'Escape':
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           this.dismiss();
           break;
 
         case 'Enter':
           if (onContent && !target.closest('textarea')) {
-            aEvent.stopPropagation();
-            aEvent.preventDefault();
+            event.stopPropagation();
+            event.preventDefault();
             this.buttonsContainer.firstChild.click();
           }
           break;
@@ -381,8 +381,8 @@
       }
     }
 
-    onKeyUp(aEvent) {
-      switch (aEvent.key) {
+    onKeyUp(event) {
+      switch (event.key) {
         case 'ArrowUp':
         case 'ArrowLeft':
         case 'PageUp':
@@ -393,8 +393,8 @@
         case 'End':
         case 'Tab':
         case 'Escape':
-          aEvent.stopPropagation();
-          aEvent.preventDefault();
+          event.stopPropagation();
+          event.preventDefault();
           break;
 
         default:
@@ -418,13 +418,13 @@
       this.dismiss();
     }
 
-    advanceFocus(aDirection) {
+    advanceFocus(direction) {
       const focusedItem = this.ui.querySelector(':focus');
       console.log('focusedItem ', focusedItem);
       const targets = this.focusTargets;
       console.log('focusTargets ', targets);
       const index = focusedItem ? targets.indexOf(focusedItem) : -1;
-      if (aDirection < 0) { // backward
+      if (direction < 0) { // backward
         const nextFocused = index < 0 ? targets[targets.length-1] :
           targets[index == 0 ? targets.length-1 : index-1];
         nextFocused.focus();
@@ -436,17 +436,17 @@
       }
     }
 
-    static async show(aParams) {
-      const confirm = new this(aParams);
+    static async show(params) {
+      const confirm = new this(params);
       return confirm.show();
     }
-    static async showInTab(aTabId, aParams) {
-      if (!aParams) {
-        aParams = aTabId;
-        aTabId = await browser.tabs.getCurrent();
+    static async showInTab(tabId, params) {
+      if (!params) {
+        params = tabId;
+        tabId = await browser.tabs.getCurrent();
       }
       try {
-        await browser.tabs.executeScript(aTabId, {
+        await browser.tabs.executeScript(tabId, {
           code: `
             if (!window.RichConfirm)
                (${defineRichConfirm.toSource()})();
@@ -454,11 +454,11 @@
           matchAboutBlank: true,
           runAt:           'document_start'
         });
-        browser.tabs.executeScript(aTabId, {
+        browser.tabs.executeScript(tabId, {
           code: `
             delete window.RichConfirm.result;
             (async () => {
-              const confirm = new RichConfirm(${JSON.stringify(aParams)});
+              const confirm = new RichConfirm(${JSON.stringify(params)});
               window.RichConfirm.result = await confirm.show();
             })();
           `,
@@ -467,7 +467,7 @@
         });
         let result;
         while (true) {
-          const results = await browser.tabs.executeScript(aTabId, {
+          const results = await browser.tabs.executeScript(tabId, {
             code:            `window.RichConfirm.result`,
             matchAboutBlank: true,
             runAt:           'document_start'
@@ -477,7 +477,7 @@
             result = results[0];
             break;
           }
-          await new Promise((aResolve, _aReject) => setTimeout(aResolve, 100));
+          await new Promise((resolve, _reject) => setTimeout(resolve, 100));
         }
         return result;
       }
