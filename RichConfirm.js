@@ -423,7 +423,7 @@
       console.log('focusedItem ', focusedItem);
       const targets = this.focusTargets;
       console.log('focusTargets ', targets);
-      let index = focusedItem ? targets.indexOf(focusedItem) : -1;
+      const index = focusedItem ? targets.indexOf(focusedItem) : -1;
       if (aDirection < 0) { // backward
         const nextFocused = index < 0 ? targets[targets.length-1] :
           targets[index == 0 ? targets.length-1 : index-1];
