@@ -39,7 +39,7 @@
     }
 
     get focusTargets() {
-      return Array.slice(this.ui.querySelectorAll('input:not([type="hidden"]), select, button')).filter(node => node.offsetWidth > 0);
+      return Array.slice(this.ui.querySelectorAll('input:not([type="hidden"]), textarea, select, button')).filter(node => node.offsetWidth > 0);
     }
 
     buildUI() {
@@ -163,8 +163,18 @@
       this.buildUI();
       await new Promise((aResolve, _aReject) => setTimeout(aResolve, 0));
 
-      if (this.params.message)
+      const range = document.createRange();
+
+      if (this.params.content) {
+        range.selectNodeContents(this.content);
+        range.collapse(false);
+        const commonClass = this.commonClass;
+        const fragment = range.createContextualFragment(this.params.content);
+        range.insertNode(fragment);
+      }
+      else if (this.params.message) {
         this.content.textContent = this.params.message;
+      }
 
       if (this.params.checkMessage) {
         this.checkMessage.textContent = this.params.checkMessage;
@@ -175,7 +185,6 @@
         this.checkContainer.classList.add('hidden');
       }
 
-      const range = document.createRange();
       range.selectNodeContents(this.buttonsContainer);
       range.deleteContents();
       const buttons = document.createDocumentFragment();
@@ -186,7 +195,6 @@
         buttons.appendChild(button);
       }
       range.insertNode(buttons);
-      range.detach();
 
       this.ui.addEventListener('click', this.onClick);
       window.addEventListener('keydown', this.onKeyDown, true);
@@ -195,7 +203,17 @@
       window.addEventListener('beforeunload', this.onUnload);
       this.ui.classList.add('show');
 
-      this.buttonsContainer.firstChild.focus();
+      this.focusTargets[0].focus();
+
+      range.detach();
+
+      if (typeof this.params.onShown == 'function') {
+        try {
+          this.params.onShown(this.content);
+        }
+        catch(_error) {
+        }
+      }
 
       return new Promise((aResolve, aReject) => {
         this._resolve = aResolve;
@@ -203,7 +221,14 @@
       });
     }
 
-    hide() {
+    async hide() {
+      if (typeof this.params.onHidden == 'function') {
+        try {
+          this.params.onHidden(this.content);
+        }
+        catch(_error) {
+        }
+      }
       this.ui.removeEventListener('click', this.onClick);
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
@@ -212,12 +237,15 @@
       delete this._resolve;
       delete this._rejecte;
       this.ui.classList.remove('show');
-      window.setTimeout(() => {
-        this.ui.parentNode.removeChild(this.ui);
-        this.style.parentNode.removeChild(this.style);
-        delete this.ui;
-        delete this.style;
-      }, 1000);
+      return new Promise((resolve, _reject) => {
+        window.setTimeout(() => {
+          this.ui.parentNode.removeChild(this.ui);
+          this.style.parentNode.removeChild(this.style);
+          delete this.ui;
+          delete this.style;
+          resolve();
+        }, 1000);
+      });
     }
 
     dismiss() {
@@ -225,30 +253,57 @@
         buttonIndex: -1,
         checked: !!this.params.checkMessage && this.checkCheckbox.checked
       });
-      this.hide();
+      return this.hide();
     }
 
     onClick(aEvent) {
+      let target = aEvent.target;
+      if (target.nodeType == Node.TEXT_NODE)
+        target = target.parentNode;
+
+      if (target.closest(`.rich-confirm-content.${this.commonClass}`) &&
+          target.closest('input, textarea, select, button'))
+        return;
+
       if (aEvent.button != 0) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
         return;
       }
 
-      const button = aEvent.target.closest('button');
+      const button = target.closest('button');
       if (button) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
         const buttonIndex = Array.from(this.buttonsContainer.childNodes).indexOf(button);
+        const values = {};
+        for (const field of this.content.querySelectorAll('[id], [name]')) {
+          let value = null;
+          if (field.matches('input[type="checkbox"]')) {
+            value = field.checked;
+          }
+          else if (field.matches('input[type="radio"]')) {
+            if (field.checked)
+              value = field.value;
+          }
+          else if ('value' in field.dataset) {
+            value = field.dataset.value;
+          }
+          else {
+            value = field.value;
+          }
+          values[field.id || field.name] = value;
+        }
         this._resolve({
           buttonIndex,
+          values,
           checked: !!this.params.checkMessage && this.checkCheckbox.checked
         });
         this.hide();
         return;
       }
 
-      if (!aEvent.target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
+      if (!target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
         aEvent.stopPropagation();
         aEvent.preventDefault();
         this.dismiss();
@@ -256,10 +311,17 @@
     }
 
     onKeyDown(aEvent) {
+      let target = aEvent.target;
+      if (target.nodeType == Node.TEXT_NODE)
+        target = target.parentNode;
+      const onContent = target.closest(`.rich-confirm-content.${this.commonClass}`);
+
       switch (aEvent.key) {
         case 'ArrowUp':
         case 'ArrowLeft':
         case 'PageUp':
+          if (onContent)
+            break;
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(-1);
@@ -268,24 +330,28 @@
         case 'ArrowDown':
         case 'ArrowRight':
         case 'PageDown':
+          if (onContent)
+            break;
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.advanceFocus(1);
           break;
 
         case 'Home':
+          if (onContent)
+            break;
           aEvent.stopPropagation();
           aEvent.preventDefault();
-          this.buttonsContainer.firstChild.focus();
+          this.focusTargets[0].focus();
           break;
 
         case 'End':
+          if (onContent)
+            break;
           aEvent.stopPropagation();
           aEvent.preventDefault();
-          if (this.params.checkMessage)
-            this.checkCheckbox.focus();
-          else
-            this.buttonsContainer.lastChild.focus();
+          const targets = this.focusTargets;
+          targets[targets.length-1].focus();
           break;
 
         case 'Tab':
@@ -298,6 +364,14 @@
           aEvent.stopPropagation();
           aEvent.preventDefault();
           this.dismiss();
+          break;
+
+        case 'Enter':
+          if (onContent && !target.closest('textarea')) {
+            aEvent.stopPropagation();
+            aEvent.preventDefault();
+            this.buttonsContainer.firstChild.click();
+          }
           break;
 
         default:
