@@ -202,7 +202,6 @@
       window.addEventListener('contextmenu', this.onContextMenu, true);
       window.addEventListener('pagehide', this.onUnload);
       window.addEventListener('beforeunload', this.onUnload);
-      this.ui.classList.add('show');
 
       this.focusTargets[0].focus();
 
@@ -216,6 +215,7 @@
         }
       }
 
+      this.ui.classList.add('show');
       return new Promise((resolve, reject) => {
         this._resolve = resolve;
         this._rejecte = reject;
@@ -223,6 +223,7 @@
     }
 
     async hide() {
+      this.ui.classList.remove('show');
       if (typeof this.params.onHidden == 'function') {
         try {
           this.params.onHidden(this.content);
@@ -238,7 +239,6 @@
       window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
       delete this._rejecte;
-      this.ui.classList.remove('show');
       return new Promise((resolve, _reject) => {
         window.setTimeout(() => {
           this.ui.parentNode.removeChild(this.ui);
