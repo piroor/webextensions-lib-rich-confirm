@@ -40,7 +40,7 @@
     }
 
     get focusTargets() {
-      return Array.slice(this.ui.querySelectorAll('input:not([type="hidden"]), textarea, select, button')).filter(node => node.offsetWidth > 0);
+      return Array.from(this.ui.querySelectorAll('input:not([type="hidden"]), textarea, select, button')).filter(node => node.offsetWidth > 0);
     }
 
     buildUI() {
