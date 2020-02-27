@@ -449,7 +449,7 @@
         await browser.tabs.executeScript(tabId, {
           code: `
             if (!window.RichConfirm)
-               (${defineRichConfirm.toSource()})();
+               (${defineRichConfirm.toString()})();
           `,
           matchAboutBlank: true,
           runAt:           'document_start'
