@@ -546,12 +546,17 @@
       const win = await browser.windows.create({
         url:    'about:blank',
         type:   'popup',
-        width:  ownerWin.width,
-        height: ownerWin.height,
-        top:    ownerWin.top,
-        left:   ownerWin.left
+        width:  16,
+        height: 16
       });
       const activeTab = win.tabs.find(tab => tab.active);
+
+      await browser.windows.update(win.id, {
+        width:  ownerWin.width,
+        height: ownerWin.height,
+        top:    -window.screen.height * 100, // ownerWin.top,
+        left:   -window.screen.width * 100 // ownerWin.left
+      });
 
       const onFocusChanged = windowId => {
         if (windowId == ownerWin.id)
@@ -559,7 +564,9 @@
       };
       browser.windows.onFocusChanged.addListener(onFocusChanged);
 
-      await new Promise((resolve, _reject) => {
+      const [resizedWin, ] = await Promise.all([
+        browser.windows.get(win.id),
+        new Promise((resolve, _reject) => {
         const onTabUpdated = (tabId, updateInfo, tab) => {
           if (updateInfo.status != 'complete' ||
               !browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -577,15 +584,16 @@
           properties: ['status'],
           tabId:      activeTab.id
         });
-      });
+        })
+      ]);
 
       const result = await this.showInTab(activeTab.id, {
         ...params,
         popup: true,
-        onShown(coordinates) {
-          const titlebarHeight = (win.height - coordinates.innerHeight);
+        async onShown(coordinates) {
+          const titlebarHeight = (resizedWin.height - coordinates.innerHeight);
           browser.windows.update(win.id, {
-            width:  Math.floor(coordinates.width + (win.width - coordinates.innerWidth)),
+            width:  Math.floor(coordinates.width + (resizedWin.width - coordinates.innerWidth)),
             height: Math.floor(coordinates.height + titlebarHeight + (titlebarHeight / 2) /* <= safety margin */),
             top:    Math.floor(ownerWin.top + ((ownerWin.height - coordinates.height) / 2)),
             left:   Math.floor(ownerWin.left + ((ownerWin.width - coordinates.width) / 2))
