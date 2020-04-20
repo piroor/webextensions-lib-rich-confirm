@@ -63,9 +63,7 @@
 
         ${common}.rich-confirm {
           left:0;
-          opacity: 0;
           pointer-events: none;
-          transition: opacity 250ms ease-out;
           z-index: 999997;
         }
         ${common}.rich-confirm.popup-window {
@@ -73,6 +71,8 @@
         }
         ${common}.rich-confirm:not(.popup-window) {
           background: rgba(0, 0, 0, 0.45);
+          opacity: 0;
+          transition: opacity 250ms ease-out;
         }
 
         ${common}.rich-confirm.show {
