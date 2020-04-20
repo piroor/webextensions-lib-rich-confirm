@@ -104,3 +104,19 @@ var result = await RichConfirm.showInTab(10, {
 
 The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will appear in the current tab.
 
+
+## Confirmation in a popup
+
+If you want to show the confirmation dialog as a popup window, call `RichConfirm.showInPopup()` with an ID of an owner window, like:
+
+```javascript
+var result = await RichConfirm.showInPopup(10, {
+  message:      'Are you ready?',
+  buttons:      ['Yes', 'No'],
+  checkMessage: 'Never show',
+  checked:      false
+});
+```
+
+The first parameter is `windows.Window.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will be placed on the last focused window.
+

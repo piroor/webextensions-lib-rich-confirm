@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2020 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
@@ -62,12 +62,17 @@
         }
 
         ${common}.rich-confirm {
-          background: rgba(0, 0, 0, 0.45);
           left:0;
           opacity: 0;
           pointer-events: none;
           transition: opacity 250ms ease-out;
           z-index: 999997;
+        }
+        ${common}.rich-confirm.dialog-window {
+          background: -moz-dialog;
+        }
+        ${common}.rich-confirm:not(.dialog-window) {
+          background: rgba(0, 0, 0, 0.45);
         }
 
         ${common}.rich-confirm.show {
@@ -80,16 +85,18 @@
         }
 
         ${common}.rich-confirm-dialog {
-          background: -moz-dialog;
-          box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
           color: -moz-dialogtext;
           font: message-box;
-          margin: 0.5em;
-          max-height: 90%;
-          max-width: 90%;
           overflow: auto;
           padding: 1em;
           z-index: 999999;
+        }
+        ${common}.rich-confirm-dialog:not(.dialog-window) {
+          background: -moz-dialog;
+          box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
+          margin: 0.5em;
+          max-height: 90%;
+          max-width: 90%;
         }
 
         ${common}.rich-confirm-buttons {
@@ -139,7 +146,7 @@
       const range = document.createRange();
       range.selectNodeContents(document.body);
       range.collapse(false);
-      const commonClass = this.commonClass;
+      const commonClass = `${this.commonClass} ${this.params.dialogWindow ? 'dialog-window' : ''}`;
       const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
@@ -160,7 +167,7 @@
       this.ui = document.body.lastElementChild;
     }
 
-    async show() {
+    async show({ onShown } = {}) {
       this.buildUI();
       await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
@@ -214,6 +221,8 @@
         catch(_error) {
         }
       }
+      if (typeof onShown == 'function')
+        onShown(this.content);
 
       this.ui.classList.add('show');
       return new Promise((resolve, reject) => {
@@ -443,8 +452,32 @@
     static async showInTab(tabId, params) {
       if (!params) {
         params = tabId;
-        tabId = await browser.tabs.getCurrent();
+        tabId = (await browser.tabs.getCurrent()).id;
       }
+      const onShown = params.onShown;
+      delete params.onShown;
+      const onShownListener = (message, sender) => {
+        if (sender &&
+            sender.tab &&
+            sender.tab.id == tabId &&
+            message &&
+            typeof message == 'object' &&
+            message.type == 'rich-confirm-dialog-shown' &&
+            typeof onShown == 'function') {
+          onShown({
+            width:       message.rect.width,
+            height:      message.rect.height,
+            left:        message.rect.left,
+            right:       message.rect.right,
+            top:         message.rect.top,
+            bottom:      message.rect.bottom,
+            innerWidth:  message.innerWidth,
+            innerHeight: message.innerHeight
+          });
+        }
+      };
+      if (onShown)
+        browser.runtime.onMessage.addListener(onShownListener);
       try {
         await browser.tabs.executeScript(tabId, {
           code: `
@@ -458,7 +491,17 @@
           code: `
             delete window.RichConfirm.result;
             (async () => {
-              const confirm = new RichConfirm(${JSON.stringify(params)});
+              const confirm = new RichConfirm({
+                ...${JSON.stringify(params)},
+                onShown(content) {
+                  browser.runtime.sendMessage({
+                    type: 'rich-confirm-dialog-shown',
+                    rect: content.closest('.rich-confirm-dialog').getBoundingClientRect(),
+                    innerWidth:  window.innerWidth,
+                    innerHeight: window.innerHeight
+                  });
+                }
+              });
               window.RichConfirm.result = await confirm.show();
             })();
           `,
@@ -486,6 +529,43 @@
           buttonIndex: -1
         };
       }
+      finally {
+        if (onShown)
+          browser.runtime.onMessage.removeListener(onShownListener);
+      }
+    }
+    static async showInPopup(winId, params) {
+      let ownerWin;
+      if (!params) {
+        params = winId;
+        ownerWin = await browser.windows.getLastFocused({});
+      }
+      else {
+        ownerWin = await browser.windows.get(winId);
+      }
+      const win = await browser.windows.create({
+        url:    'about:blank',
+        type:   'popup',
+        width:  ownerWin.width,
+        height: ownerWin.height,
+        top:    ownerWin.top,
+        left:   ownerWin.left
+      });
+      const activeTab = win.tabs.find(tab => tab.active);
+      const result = await this.showInTab(activeTab.id, {
+        ...params,
+        dialogWindow: true,
+        onShown(coordinates) {
+          browser.windows.update(win.id, {
+            width:  Math.floor(coordinates.width + (win.width - coordinates.innerWidth)),
+            height: Math.floor(coordinates.height + (win.height - coordinates.innerHeight)),
+            top:    Math.floor(ownerWin.top + ((ownerWin.height - coordinates.height) / 2)),
+            left:   Math.floor(ownerWin.left + ((ownerWin.width - coordinates.width) / 2))
+          })
+        }
+      });
+      browser.windows.remove(win.id);
+      return result;
     }
   };
   RichConfirm.prototype.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
