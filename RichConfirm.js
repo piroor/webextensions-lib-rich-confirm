@@ -567,23 +567,23 @@
       const [resizedWin, ] = await Promise.all([
         browser.windows.get(win.id),
         new Promise((resolve, _reject) => {
-        const onTabUpdated = (tabId, updateInfo, tab) => {
-          if (updateInfo.status != 'complete' ||
-              !browser.tabs.onUpdated.hasListener(onTabUpdated))
-            return;
-          browser.tabs.onUpdated.removeListener(onTabUpdated);
-          resolve();
-        };
-        setTimeout(() => {
-          if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
-            return;
-          browser.tabs.onUpdated.removeListener(onTabUpdated);
-          resolve();
-        }, 100);
-        browser.tabs.onUpdated.addListener(onTabUpdated, {
-          properties: ['status'],
-          tabId:      activeTab.id
-        });
+          const onTabUpdated = (tabId, updateInfo, tab) => {
+            if (updateInfo.status != 'complete' ||
+                !browser.tabs.onUpdated.hasListener(onTabUpdated))
+              return;
+            browser.tabs.onUpdated.removeListener(onTabUpdated);
+            resolve();
+          };
+          setTimeout(() => {
+            if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
+              return;
+            browser.tabs.onUpdated.removeListener(onTabUpdated);
+            resolve();
+          }, 100);
+          browser.tabs.onUpdated.addListener(onTabUpdated, {
+            properties: ['status'],
+            tabId:      activeTab.id
+          });
         })
       ]);
 
