@@ -552,6 +552,33 @@
         left:   ownerWin.left
       });
       const activeTab = win.tabs.find(tab => tab.active);
+
+      const onFocusChanged = windowId => {
+        if (windowId == ownerWin.id)
+          browser.windows.update(win.id, { focused: true });
+      };
+      browser.windows.onFocusChanged.addListener(onFocusChanged);
+
+      await new Promise((resolve, _reject) => {
+        const onTabUpdated = (tabId, updateInfo, tab) => {
+          if (updateInfo.status != 'complete' ||
+              !browser.tabs.onUpdated.hasListener(onTabUpdated))
+            return;
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
+          resolve();
+        };
+        setTimeout(() => {
+          if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
+            return;
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
+          resolve();
+        }, 100);
+        browser.tabs.onUpdated.addListener(onTabUpdated, {
+          properties: ['status'],
+          tabId:      activeTab.id
+        });
+      });
+
       const result = await this.showInTab(activeTab.id, {
         ...params,
         popup: true,
@@ -564,6 +591,7 @@
           })
         }
       });
+      browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.remove(win.id);
       return result;
     }
