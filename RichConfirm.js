@@ -68,10 +68,10 @@
           transition: opacity 250ms ease-out;
           z-index: 999997;
         }
-        ${common}.rich-confirm.dialog-window {
+        ${common}.rich-confirm.popup-window {
           background: -moz-dialog;
         }
-        ${common}.rich-confirm:not(.dialog-window) {
+        ${common}.rich-confirm:not(.popup-window) {
           background: rgba(0, 0, 0, 0.45);
         }
 
@@ -91,7 +91,7 @@
           padding: 1em;
           z-index: 999999;
         }
-        ${common}.rich-confirm-dialog:not(.dialog-window) {
+        ${common}.rich-confirm-dialog:not(.popup-window) {
           background: -moz-dialog;
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
           margin: 0.5em;
@@ -146,7 +146,7 @@
       const range = document.createRange();
       range.selectNodeContents(document.body);
       range.collapse(false);
-      const commonClass = `${this.commonClass} ${this.params.dialogWindow ? 'dialog-window' : ''}`;
+      const commonClass = `${this.commonClass} ${this.params.popup ? 'popup-window' : ''}`;
       const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
@@ -554,7 +554,7 @@
       const activeTab = win.tabs.find(tab => tab.active);
       const result = await this.showInTab(activeTab.id, {
         ...params,
-        dialogWindow: true,
+        popup: true,
         onShown(coordinates) {
           browser.windows.update(win.id, {
             width:  Math.floor(coordinates.width + (win.width - coordinates.innerWidth)),
