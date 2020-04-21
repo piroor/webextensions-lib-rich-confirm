@@ -235,7 +235,7 @@
       this.ui.classList.remove('show');
       if (typeof this.params.onHidden == 'function') {
         try {
-          this.params.onHidden(this.content);
+          this.params.onHidden(this.content, this.params.inject || {});
         }
         catch(_error) {
         }

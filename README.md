@@ -68,14 +68,22 @@ var result = await RichConfirm.show({
                      name="url"
                      value=${JSON.stringify(url)}></label></p>
   `,
-  onShown(container) {
+  // The handler "onShown" and "onHidden" can be executed in a different
+  // namespace. If you want to deliver functions, classes, and other
+  // JSON.stringify-acceptable values to these handlers, you need to
+  // inject them explicitly.
+  inject: {
+    foo,
+    bar
+  },
+  onShown(container, { foo, bar }) {
     // This handler recenves the container element of contents
     // generated from the "content" parameter.
     // You can register listeners to generated fields or
     // do more initialization, like:
     // container.querySelector('input[name="title"]').addEventListener(...);
   },
-  onHidden(container) {
+  onHidden(container, { foo, bar }) {
     // You can destroy generated fields when the dialog is
     // closed, like:
     // container.querySelector('input[name="title"]').removeEventListener(...);
