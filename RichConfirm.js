@@ -493,7 +493,6 @@
         delete transferableParams.inject;
         for (const key in params.inject) {
           const value = inject[key];
-          console.log(key, typeof value, value.toString !== Object.prototype.toString, value);
           const transferable = (
             value &&
             typeof value == 'function' &&
