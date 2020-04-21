@@ -603,8 +603,8 @@
       // The coordinates must be positive integer because large negative
       // coordinates don't work as expected on macOS.
       await browser.windows.update(win.id, {
-        top:    window.screen.height * 100, // ownerWin.top,
-        left:   window.screen.width * 100 // ownerWin.left
+        top:  window.screen.height * 100, // ownerWin.top,
+        left: window.screen.width * 100 // ownerWin.left
       });
 
       const onFocusChanged = windowId => {
