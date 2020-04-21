@@ -216,13 +216,13 @@
 
       if (typeof this.params.onShown == 'function') {
         try {
-          this.params.onShown(this.content);
+          this.params.onShown(this.content, this.params.inject || {});
         }
         catch(_error) {
         }
       }
       if (typeof onShown == 'function')
-        onShown(this.content);
+        onShown(this.content, this.params.inject || {});
 
       this.ui.classList.add('show');
       return new Promise((resolve, reject) => {
@@ -449,22 +449,22 @@
       const confirm = new this(params);
       return confirm.show();
     }
+
     static async showInTab(tabId, params) {
       if (!params) {
         params = tabId;
         tabId = (await browser.tabs.getCurrent()).id;
       }
-      const onShown = params.onShown;
-      delete params.onShown;
+      const onSizeDetermined = params.onSizeDetermined;
+      delete params.onSizeDetermined;
       const onShownListener = (message, sender) => {
         if (sender &&
             sender.tab &&
             sender.tab.id == tabId &&
             message &&
             typeof message == 'object' &&
-            message.type == 'rich-confirm-dialog-shown' &&
-            typeof onShown == 'function') {
-          onShown({
+            message.type == 'rich-confirm-dialog-shown') {
+          onSizeDetermined({
             width:       message.rect.width,
             height:      message.rect.height,
             left:        message.rect.left,
@@ -476,7 +476,7 @@
           });
         }
       };
-      if (onShown)
+      if (typeof onSizeDetermined == 'function')
         browser.runtime.onMessage.addListener(onShownListener);
       try {
         await browser.tabs.executeScript(tabId, {
@@ -487,23 +487,55 @@
           matchAboutBlank: true,
           runAt:           'document_start'
         });
+        const transferableParams = { ...params };
+        const injectTransferable = [];
+        const inject = params.inject || {};
+        delete transferableParams.inject;
+        for (const key in params.inject) {
+          const value = params.inject[key];
+          console.log(key, typeof value, value.toString !== Object.prototype.toString, value);
+          const transferable = (
+            value &&
+            typeof value == 'function' &&
+            typeof value.toString == 'function'
+          ) ? value.toString() : JSON.stringify(value);
+          injectTransferable.push(`${JSON.stringify(key)} : ${transferable}`);
+        }
+        const originalOnShown = typeof params.onShown == 'function' ?
+          params.onShown.toString()
+            .replace(/^(async\s+)?function/, '$1')
+            .replace(/^(async\s+)?/, '$1 function ') :
+          '() => {}';
+        delete transferableParams.onShown;
         browser.tabs.executeScript(tabId, {
           code: `
             delete window.RichConfirm.result;
-            (async () => {
+            (async (originalOnShown, inject) => {
+              const params = ${JSON.stringify(transferableParams)};
               const confirm = new RichConfirm({
-                ...${JSON.stringify(params)},
-                onShown(content) {
-                  browser.runtime.sendMessage({
-                    type: 'rich-confirm-dialog-shown',
-                    rect: content.closest('.rich-confirm-dialog').getBoundingClientRect(),
-                    innerWidth:  window.innerWidth,
-                    innerHeight: window.innerHeight
-                  });
+                ...params,
+                inject,
+                onShown(content, inject) {
+                  try {
+                    if (typeof originalOnShown == 'function')
+                      originalOnShown(content, inject);
+                    browser.runtime.sendMessage({
+                      type: 'rich-confirm-dialog-shown',
+                      rect: content.closest('.rich-confirm-dialog').getBoundingClientRect(),
+                      innerWidth:  window.innerWidth,
+                      innerHeight: window.innerHeight
+                    });
+                  }
+                  catch(error) {
+                    console.error(error);
+                  }
                 }
               });
               window.RichConfirm.result = await confirm.show();
-            })();
+            })(
+              (${originalOnShown}),
+              {${injectTransferable.join(',')}}
+            );
           `,
           matchAboutBlank: true,
           runAt:           'document_start'
@@ -524,16 +556,18 @@
         }
         return result;
       }
-      catch(_e) {
+      catch(error) {
+        console.error(error);
         return {
           buttonIndex: -1
         };
       }
       finally {
-        if (onShown)
+        if (typeof onSizeDetermined == 'function')
           browser.runtime.onMessage.removeListener(onShownListener);
       }
     }
+
     static async showInPopup(winId, params) {
       let ownerWin;
       if (!params) {
@@ -590,7 +624,7 @@
       const result = await this.showInTab(activeTab.id, {
         ...params,
         popup: true,
-        async onShown(coordinates) {
+        async onSizeDetermined(coordinates) {
           const titlebarHeight = (resizedWin.height - coordinates.innerHeight);
           browser.windows.update(win.id, {
             width:  Math.floor(coordinates.width + (resizedWin.width - coordinates.innerWidth)),
