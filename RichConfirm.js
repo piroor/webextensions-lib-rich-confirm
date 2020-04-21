@@ -589,7 +589,7 @@
       const activeTab = win.tabs.find(tab => tab.active);
 
       // Step 2:
-      // Resize the window to expected size.
+      // Resize the window to expected size on outside of the screen.
       if (/mac/i.test(navigator.platform)) {
       // On macOS environment this operation must be done separately before
       // window move, because resizing of a window outside the visible area
