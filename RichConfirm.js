@@ -492,7 +492,7 @@
         const inject = params.inject || {};
         delete transferableParams.inject;
         for (const key in params.inject) {
-          const value = params.inject[key];
+          const value = inject[key];
           console.log(key, typeof value, value.toString !== Object.prototype.toString, value);
           const transferable = (
             value &&
@@ -601,7 +601,7 @@
       const [resizedWin, ] = await Promise.all([
         browser.windows.get(win.id),
         new Promise((resolve, _reject) => {
-          const onTabUpdated = (tabId, updateInfo, tab) => {
+          const onTabUpdated = (tabId, updateInfo, _tab) => {
             if (updateInfo.status != 'complete' ||
                 !browser.tabs.onUpdated.hasListener(onTabUpdated))
               return;
