@@ -624,23 +624,23 @@
       browser.windows.onFocusChanged.addListener(onFocusChanged);
 
       await new Promise((resolve, _reject) => {
-          const onTabUpdated = (tabId, updateInfo, _tab) => {
-            if (updateInfo.status != 'complete' ||
-                !browser.tabs.onUpdated.hasListener(onTabUpdated))
-              return;
-            browser.tabs.onUpdated.removeListener(onTabUpdated);
-            resolve();
-          };
-          setTimeout(() => {
-            if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
-              return;
-            browser.tabs.onUpdated.removeListener(onTabUpdated);
-            resolve();
-          }, 100);
-          browser.tabs.onUpdated.addListener(onTabUpdated, {
-            properties: ['status'],
-            tabId:      activeTab.id
-          });
+        const onTabUpdated = (tabId, updateInfo, _tab) => {
+          if (updateInfo.status != 'complete' ||
+              !browser.tabs.onUpdated.hasListener(onTabUpdated))
+            return;
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
+          resolve();
+        };
+        setTimeout(() => {
+          if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
+            return;
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
+          resolve();
+        }, 100);
+        browser.tabs.onUpdated.addListener(onTabUpdated, {
+          properties: ['status'],
+          tabId:      activeTab.id
+        });
       });
 
       if (params.title) {
