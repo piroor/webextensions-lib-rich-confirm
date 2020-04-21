@@ -621,6 +621,14 @@
         })
       ]);
 
+      if (params.title) {
+        browser.tabs.executeScript(activeTab.id, {
+          code:            `document.title = ${JSON.stringify(params.title)};`,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        });
+      }
+
       const result = await this.showInTab(activeTab.id, {
         ...params,
         popup: true,
