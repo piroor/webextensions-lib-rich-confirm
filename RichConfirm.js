@@ -314,7 +314,8 @@
         return;
       }
 
-      if (!target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
+      if (!this.params.popup &&
+          !target.closest(`.rich-confirm-dialog.${this.commonClass}`)) {
         event.stopPropagation();
         event.preventDefault();
         this.dismiss();
