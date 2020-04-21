@@ -623,9 +623,7 @@
       };
       browser.windows.onFocusChanged.addListener(onFocusChanged);
 
-      const [resizedWin, ] = await Promise.all([
-        browser.windows.get(win.id),
-        new Promise((resolve, _reject) => {
+      await new Promise((resolve, _reject) => {
           const onTabUpdated = (tabId, updateInfo, _tab) => {
             if (updateInfo.status != 'complete' ||
                 !browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -643,8 +641,7 @@
             properties: ['status'],
             tabId:      activeTab.id
           });
-        })
-      ]);
+      });
 
       if (params.title) {
         browser.tabs.executeScript(activeTab.id, {
