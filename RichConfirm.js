@@ -472,8 +472,8 @@
             right:       message.rect.right,
             top:         message.rect.top,
             bottom:      message.rect.bottom,
-            innerWidth:  message.innerWidth,
-            innerHeight: message.innerHeight
+            frameWidth:  message.frameWidth,
+            frameHeight: message.frameHeight
           });
         }
       };
@@ -522,8 +522,8 @@
                     browser.runtime.sendMessage({
                       type: 'rich-confirm-dialog-shown',
                       rect: content.closest('.rich-confirm-dialog').getBoundingClientRect(),
-                      innerWidth:  window.innerWidth,
-                      innerHeight: window.innerHeight
+                      frameWidth:  window.outerWidth - window.innerWidth,
+                      frameHeight: window.outerHeight - window.innerHeight
                     });
                   }
                   catch(error) {
@@ -650,12 +650,13 @@
         async onSizeDetermined(coordinates) {
           // Final Step:
           // Shrink the window and move it to the expected position.
-          const titlebarHeight = (resizedWin.height - coordinates.innerHeight);
+          const width  = Math.ceil(coordinates.width + coordinates.frameWidth);
+          const height = Math.ceil(coordinates.height + coordinates.frameHeight);
           browser.windows.update(win.id, {
-            width:  Math.floor(coordinates.width + (resizedWin.width - coordinates.innerWidth)),
-            height: Math.floor(coordinates.height + titlebarHeight + (titlebarHeight / 2) /* <= safety margin */),
-            top:    Math.floor(ownerWin.top + ((ownerWin.height - coordinates.height) / 2)),
-            left:   Math.floor(ownerWin.left + ((ownerWin.width - coordinates.width) / 2))
+            width,
+            height,
+            top:  Math.floor(ownerWin.top + ((ownerWin.height - height) / 2)),
+            left: Math.floor(ownerWin.left + ((ownerWin.width - width) / 2))
           })
         }
       });
