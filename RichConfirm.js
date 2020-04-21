@@ -590,6 +590,7 @@
 
       // Step 2:
       // Resize the window to expected size.
+      if (/mac/i.test(navigator.platform)) {
       // On macOS environment this operation must be done separately before
       // window move, because resizing of a window outside the visible area
       // moves the window into the main screen unexpectedly.
@@ -597,15 +598,24 @@
         width:  ownerWin.width,
         height: ownerWin.height
       });
-      // Step 3:
+      // Step 2.5:
       // Move the window outside the visible area, until all UI elements are
       // prepared.
       // The coordinates must be positive integer because large negative
       // coordinates don't work as expected on macOS.
       await browser.windows.update(win.id, {
-        top:  window.screen.height * 100, // ownerWin.top,
-        left: window.screen.width * 100 // ownerWin.left
+        top:  window.screen.height * 100,
+        left: window.screen.width * 100
       });
+      }
+      else {
+        await browser.windows.update(win.id, {
+          width:  ownerWin.width,
+          height: ownerWin.height,
+          top:  window.screen.height * 100,
+          left: window.screen.width * 100
+        });
+      }
 
       const onFocusChanged = windowId => {
         if (windowId == ownerWin.id)
