@@ -622,7 +622,7 @@
           browser.windows.update(win.id, { focused: true });
       };
       if (onFocusChanged)
-      browser.windows.onFocusChanged.addListener(onFocusChanged);
+        browser.windows.onFocusChanged.addListener(onFocusChanged);
 
       await new Promise((resolve, _reject) => {
         const onTabUpdated = (tabId, updateInfo, _tab) => {
@@ -670,7 +670,7 @@
         }
       });
       if (onFocusChanged)
-      browser.windows.onFocusChanged.removeListener(onFocusChanged);
+        browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.remove(win.id);
       return result;
     }
