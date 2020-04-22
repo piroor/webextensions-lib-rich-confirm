@@ -210,21 +210,21 @@
       if (accessKey) {
         element.accessKey = element.dataset.accessKey = accessKey.toLowerCase();
         if (matchedKey) {
-        const range = document.createRange();
-        const textNode = this.evaluateXPath(
-          `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
-          element,
-          XPathResult.FIRST_ORDERED_NODE_TYPE
-        ).singleNodeValue;
-        const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
-        range.setStart(textNode, startPosition);
-        range.setEnd(textNode, startPosition + 2);
-        range.deleteContents();
-        const accessKeyNode = document.createElement('span');
-        accessKeyNode.classList.add('accesskey');
-        accessKeyNode.textContent = accessKey;
-        range.insertNode(accessKeyNode);
-        range.detach();
+          const range = document.createRange();
+          const textNode = this.evaluateXPath(
+            `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
+            element,
+            XPathResult.FIRST_ORDERED_NODE_TYPE
+          ).singleNodeValue;
+          const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
+          range.setStart(textNode, startPosition);
+          range.setEnd(textNode, startPosition + 2);
+          range.deleteContents();
+          const accessKeyNode = document.createElement('span');
+          accessKeyNode.classList.add('accesskey');
+          accessKeyNode.textContent = accessKey;
+          range.insertNode(accessKeyNode);
+          range.detach();
         }
       }
       else if (/^([^\s])/i.test(label))
