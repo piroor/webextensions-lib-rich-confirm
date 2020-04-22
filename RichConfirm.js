@@ -617,10 +617,11 @@
         });
       }
 
-      const onFocusChanged = windowId => {
+      const onFocusChanged = !params.modal ? null : windowId => {
         if (windowId == ownerWin.id)
           browser.windows.update(win.id, { focused: true });
       };
+      if (onFocusChanged)
       browser.windows.onFocusChanged.addListener(onFocusChanged);
 
       await new Promise((resolve, _reject) => {
@@ -668,6 +669,7 @@
           })
         }
       });
+      if (onFocusChanged)
       browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.remove(win.id);
       return result;
