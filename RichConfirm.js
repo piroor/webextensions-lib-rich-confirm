@@ -657,8 +657,9 @@
         async onSizeDetermined(coordinates) {
           // Final Step:
           // Shrink the window and move it to the expected position.
-          const width  = Math.ceil(coordinates.width + coordinates.frameWidth);
-          const height = Math.ceil(coordinates.height + coordinates.frameHeight);
+          const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
+          const width  = Math.ceil((coordinates.width + coordinates.frameWidth) * safetyFactor);
+          const height = Math.ceil((coordinates.height + coordinates.frameHeight));
           browser.windows.update(win.id, {
             width,
             height,
