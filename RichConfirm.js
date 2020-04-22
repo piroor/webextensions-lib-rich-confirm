@@ -213,13 +213,13 @@
         element.accessKey = element.dataset.accessKey = accessKey.toLowerCase();
         if (matchedKey &&
             !/^(input|textarea)$/i.test(element.localName)) {
-          const range = document.createRange();
           const textNode = this.evaluateXPath(
             `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
             element,
             XPathResult.FIRST_ORDERED_NODE_TYPE
           ).singleNodeValue;
           if (textNode) {
+            const range = document.createRange();
             const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
             range.setStart(textNode, startPosition);
             range.setEnd(textNode, startPosition + matchedKey[1].length);
