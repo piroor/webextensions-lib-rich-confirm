@@ -150,6 +150,10 @@
         ${common}.rich-confirm.popup-window button {
           -moz-appearance: button;
         }
+
+        ${common}.rich-confirm .accesskey {
+          text-decoration: underline;
+        }
       `;
       document.head.appendChild(this.style);
 
@@ -175,6 +179,27 @@
       range.insertNode(fragment);
       range.detach();
       this.ui = document.body.lastElementChild;
+    }
+
+    getNextFocusedNodeByAccesskey(key) {
+      for (const attribute of ['accesskey', 'data-access-key', 'data-sub-access-key']) {
+        const current = this.dialog.querySelector(':focus');
+        const condition = `[${attribute}="${key.toLowerCase()}"]`;
+        const nextNode = this.getNextNode(current, condition);
+        if (nextNode)
+          return nextNode;
+      }
+      return null;
+    }
+
+    getNextNode(base, condition = '') {
+      const matchedNodes = [...this.dialog.querySelectorAll(condition)];
+      const currentIndex = matchedNodes.indexOf(base);
+      const nextNode = currentIndex == -1 || currentIndex == matchedNodes.index - 1 ?
+        matchedNodes[0] : matchedNodes[currentIndex + 1];
+      if (nextNode && window.getComputedStyle(nextNode, null).display == 'none')
+        return this.getNextNode(nextNode, condition);
+      return nextNode;
     }
 
     async show({ onShown } = {}) {
@@ -205,11 +230,32 @@
       range.selectNodeContents(this.buttonsContainer);
       range.deleteContents();
       const buttons = document.createDocumentFragment();
+      const ACCESS_KEY_MATCHER = /(&([^\s]))/i;
       for (const label of this.params.buttons) {
         const button = document.createElement('button');
         button.textContent = label;
         button.setAttribute('title', label);
         buttons.appendChild(button);
+        const matchedKey = label.match(ACCESS_KEY_MATCHER);
+        if (matchedKey) {
+          const range = document.createRange();
+          const textNode = button.firstChild;
+          const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
+          range.setStart(textNode, startPosition);
+          range.setEnd(textNode, startPosition + 2);
+          range.deleteContents();
+          const accessKeyNode = document.createElement('span');
+          accessKeyNode.classList.add('accesskey');
+          accessKeyNode.textContent = matchedKey[2];
+          range.insertNode(accessKeyNode);
+          range.detach();
+          button.dataset.accessKey = matchedKey[2].toLowerCase();
+          button.setAttribute('accesskey', button.dataset.accessKey);
+        }
+        else if (/^([^\s])/i.test(label))
+          button.dataset.subAccessKey = RegExp.$1.toLowerCase();
+        else
+          button.dataset.accessKey = button.dataset.subAccessKey = null;
       }
       range.insertNode(buttons);
 
@@ -396,8 +442,29 @@
           }
           break;
 
-        default:
-          return;
+        default: {
+          const currentFocused = this.dialog.querySelector(':focus');
+          const needAccelKey = (
+            currentFocused &&
+            (currentFocused.localName.toLowerCase() == 'textarea' ||
+             (currentFocused.localName.toLowerCase() == 'input' &&
+              /^(date|datetime|datetime-local|email|file|month|number|password|search|tel|text|time|url|week)$/i.test(currentFocused.type)))
+          );
+          if ((!needAccelKey || event.altKey) &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.metaKey &&
+              event.key.length == 1) {
+            const node = this.getNextFocusedNodeByAccesskey(event.key);
+            if (node && typeof node.focus == 'function') {
+              node.focus();
+              const nextNode = this.getNextFocusedNodeByAccesskey(event.key);
+              if ((!nextNode || nextNode == node) &&
+                  typeof node.click == 'function')
+                node.click();
+            }
+          }
+        }; return;
       }
     }
 
