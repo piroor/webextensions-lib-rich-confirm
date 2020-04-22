@@ -211,13 +211,15 @@
       const accessKey = element.accessKey || (matchedKey && matchedKey[2]);
       if (accessKey) {
         element.accessKey = element.dataset.accessKey = accessKey.toLowerCase();
-        if (matchedKey) {
+        if (matchedKey &&
+            !/^(input|textarea)$/i.test(element.localName)) {
           const range = document.createRange();
           const textNode = this.evaluateXPath(
             `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
             element,
             XPathResult.FIRST_ORDERED_NODE_TYPE
           ).singleNodeValue;
+          if (textNode) {
           const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
           range.setStart(textNode, startPosition);
           range.setEnd(textNode, startPosition + matchedKey[1].length);
@@ -227,6 +229,7 @@
           accessKeyNode.textContent = matchedKey[2];
           range.insertNode(accessKeyNode);
           range.detach();
+          }
         }
       }
       else if (/^([^\s])/i.test(label))
