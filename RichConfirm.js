@@ -204,9 +204,12 @@
 
     updateAccessKey(element) {
       const ACCESS_KEY_MATCHER = /(&([^\s]))/i;
-      const label = element.textContent || (element.type == 'button' && element.value) || '';
+      const label = element.textContent || (/^(button|submit|reset)$/i.test(element.type) && element.value) || '';
       const matchedKey = label.match(ACCESS_KEY_MATCHER);
-      if (matchedKey) {
+      const accessKey = element.accessKey || matchedKey && matchedKey[2];
+      if (accessKey) {
+        element.accessKey = element.dataset.accessKey = accessKey.toLowerCase();
+        if (matchedKey) {
         const range = document.createRange();
         const textNode = this.evaluateXPath(
           `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
@@ -219,11 +222,10 @@
         range.deleteContents();
         const accessKeyNode = document.createElement('span');
         accessKeyNode.classList.add('accesskey');
-        accessKeyNode.textContent = matchedKey[2];
+        accessKeyNode.textContent = accessKey;
         range.insertNode(accessKeyNode);
         range.detach();
-        element.dataset.accessKey = matchedKey[2].toLowerCase();
-        element.setAttribute('accesskey', element.dataset.accessKey);
+        }
       }
       else if (/^([^\s])/i.test(label))
         element.dataset.subAccessKey = RegExp.$1.toLowerCase();
@@ -265,7 +267,7 @@
         range.collapse(false);
         const fragment = range.createContextualFragment(this.params.content);
         range.insertNode(fragment);
-        for (const element of this.content.querySelectorAll('label, input[type="button"], button, [accesskey]')) {
+        for (const element of this.content.querySelectorAll('[accesskey]')) {
           this.updateAccessKey(element);
         }
       }
