@@ -205,8 +205,10 @@
     updateAccessKey(element) {
       const ACCESS_KEY_MATCHER = /(&([^\s]))/i;
       const label = element.textContent || (/^(button|submit|reset)$/i.test(element.type) && element.value) || '';
-      const matchedKey = label.match(ACCESS_KEY_MATCHER);
-      const accessKey = element.accessKey || matchedKey && matchedKey[2];
+      const matchedKey = element.accessKey ?
+        label.match(new RegExp(`((${element.accessKey}))`, 'i')) :
+        label.match(ACCESS_KEY_MATCHER);
+      const accessKey = element.accessKey || (matchedKey && matchedKey[2]);
       if (accessKey) {
         element.accessKey = element.dataset.accessKey = accessKey.toLowerCase();
         if (matchedKey) {
@@ -218,11 +220,11 @@
           ).singleNodeValue;
           const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
           range.setStart(textNode, startPosition);
-          range.setEnd(textNode, startPosition + 2);
+          range.setEnd(textNode, startPosition + matchedKey[1].length);
           range.deleteContents();
           const accessKeyNode = document.createElement('span');
           accessKeyNode.classList.add('accesskey');
-          accessKeyNode.textContent = accessKey;
+          accessKeyNode.textContent = matchedKey[2];
           range.insertNode(accessKeyNode);
           range.detach();
         }
