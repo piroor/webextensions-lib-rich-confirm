@@ -106,26 +106,32 @@
           margin: 0.5em 0 0;
         }
 
+        ${common}.rich-confirm button {
+          font: message-box;
+        }
+
         ${common}.rich-confirm-buttons button {
+          display: block;
+          margin-bottom: 0.2em;
+          text-align: center;
+          width: 100%;
+        }
+
+        ${common}.rich-confirm-buttons:not(.popup-window) button {
           background: ButtonFace;
           border: 1px solid ThreeDShadow;
           border-radius: 0;
           color: ButtonText;
-          display: block;
-          font: message-box;
-          margin-bottom: 0.2em;
           padding: 0.4em;
-          text-align: center;
-          width: 100%;
         }
-        ${common}.rich-confirm-buttons button:focus {
+        ${common}.rich-confirm-buttons:not(.popup-window) button:focus {
           border-color: Highlight;
         }
-        ${common}.rich-confirm-buttons button:focus::-moz-focus-inner {
+        ${common}.rich-confirm-buttons:not(.popup-window) button:focus::-moz-focus-inner {
           border: none;
         }
 
-        ${common}.rich-confirm-buttons button:hover {
+        ${common}.rich-confirm-buttons:not(.popup-window) button:hover {
           background: Highlight;
           border-color: ThreeDShadow;
           color: HighlightText;
@@ -139,6 +145,10 @@
 
         ${common}.rich-confirm-check-label.hidden {
           display: none;
+        }
+
+        ${common}.rich-confirm.popup-window button {
+          -moz-appearance: button;
         }
       `;
       document.head.appendChild(this.style);
