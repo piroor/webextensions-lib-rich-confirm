@@ -220,15 +220,15 @@
             XPathResult.FIRST_ORDERED_NODE_TYPE
           ).singleNodeValue;
           if (textNode) {
-          const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
-          range.setStart(textNode, startPosition);
-          range.setEnd(textNode, startPosition + matchedKey[1].length);
-          range.deleteContents();
-          const accessKeyNode = document.createElement('span');
-          accessKeyNode.classList.add('accesskey');
-          accessKeyNode.textContent = matchedKey[2];
-          range.insertNode(accessKeyNode);
-          range.detach();
+            const startPosition = textNode.nodeValue.indexOf(matchedKey[1]);
+            range.setStart(textNode, startPosition);
+            range.setEnd(textNode, startPosition + matchedKey[1].length);
+            range.deleteContents();
+            const accessKeyNode = document.createElement('span');
+            accessKeyNode.classList.add('accesskey');
+            accessKeyNode.textContent = matchedKey[2];
+            range.insertNode(accessKeyNode);
+            range.detach();
           }
         }
       }
