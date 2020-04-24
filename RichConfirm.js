@@ -48,6 +48,229 @@
       this.style.setAttribute('type', 'text/css');
       const common = `.${this.commonClass}`;
       this.style.textContent = `
+        /* color scheme */
+        ${common}.rich-confirm {
+          /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
+          --in-content-page-color: var(--grey-90);
+          --in-content-page-background: var(--grey-10);
+          --in-content-text-color: var(--in-content-page-color);
+          --in-content-deemphasized-text: var(--grey-60);
+          --in-content-selected-text: #fff;
+          --in-content-box-background: #fff;
+          --in-content-box-background-hover: var(--grey-20);
+          --in-content-box-background-active: var(--grey-30);
+          --in-content-box-border-color: var(--grey-90-a30);
+          --in-content-box-border-color-mixed: rgb(calc((249 * 0.7) + (12 * 0.3)), calc((249 * 0.7) + (12 * 0.3)), calc((250 * 0.7) + (13 * 0.3)));
+          --in-content-box-info-background: var(--grey-20);
+          --in-content-item-hover: rgba(69, 161, 255, 0.2); /* blue 40 a20 */
+          --in-content-item-hover-mixed: rgb(calc((249 * 0.8) + (69 * 0.2)), calc((249 * 0.8) + (161 * 0.2)), calc((250 * 0.8) + (255 * 0.2)));
+          --in-content-item-selected: var(--blue-50);
+          --in-content-border-highlight: var(--blue-50);
+          --in-content-border-focus: var(--blue-50);
+          --in-content-border-hover: var(--grey-90-a50);
+          --in-content-border-hover-mixed: rgb(calc((249 * 0.5) + (12 * 0.5)), calc((249 * 0.5) + (12 * 0.5)), calc((250 * 0.5) + (13 * 0.5)));
+          --in-content-border-active: var(--blue-50);
+          --in-content-border-active-shadow: var(--blue-50-a30);
+          --in-content-border-invalid: var(--red-50);
+          --in-content-border-invalid-shadow: var(--red-50-a30);
+          --in-content-border-color: var(--grey-30);
+          --in-content-border-color-mixed: #d7d7db;
+          --in-content-category-outline-focus: 1px dotted var(--blue-50);
+          --in-content-category-text-selected: var(--blue-50);
+          --in-content-category-text-selected-active: var(--blue-60);
+          --in-content-category-background-hover: rgba(12,12,13,0.1);
+          --in-content-category-background-active: rgba(12,12,13,0.15);
+          --in-content-category-background-selected-hover: rgba(12,12,13,0.15);
+          --in-content-category-background-selected-active: rgba(12,12,13,0.2);
+          --in-content-tab-color: #424f5a;
+          --in-content-link-color: var(--blue-60);
+          --in-content-link-color-hover: var(--blue-70);
+          --in-content-link-color-active: var(--blue-80);
+          --in-content-link-color-visited: var(--blue-60);
+          --in-content-button-background: var(--grey-90-a10);
+          --in-content-button-background-mixed: rgb(calc((249 * 0.9) + (12 * 0.1)), calc((249 * 0.9) + (12 * 0.1)), calc((250 * 0.9) + (13 * 0.1)));
+          --in-content-button-background-hover: var(--grey-90-a20);
+          --in-content-button-background-hover-mixed: rgb(calc((249 * 0.8) + (12 * 0.2)), calc((249 * 0.8) + (12 * 0.2)), calc((250 * 0.8) + (13 * 0.2)));
+          --in-content-button-background-active: var(--grey-90-a30);
+          --in-content-button-background-active-mixed: rgb(calc((249 * 0.7) + (12 * 0.3)), calc((249 * 0.7) + (12 * 0.3)), calc((250 * 0.7) + (13 * 0.3)));
+
+          --blue-40: #45a1ff;
+          --blue-40-a10: rgb(69, 161, 255, 0.1);
+          --blue-50: #0a84ff;
+          --blue-50-a30: rgba(10, 132, 255, 0.3);
+          --blue-60: #0060df;
+          --blue-70: #003eaa;
+          --blue-80: #002275;
+          --grey-10: #f9f9fa;
+          --grey-10-a015: rgba(249, 249, 250, 0.015);
+          --grey-10-a20: rgba(249, 249, 250, 0.2);
+          --grey-20: #ededf0;
+          --grey-30: #d7d7db;
+          --grey-40: #b1b1b3;
+          --grey-60: #4a4a4f;
+          --grey-90: #0c0c0d;
+          --grey-90-a10: rgba(12, 12, 13, 0.1);
+          --grey-90-a20: rgba(12, 12, 13, 0.2);
+          --grey-90-a30: rgba(12, 12, 13, 0.3);
+          --grey-90-a50: rgba(12, 12, 13, 0.5);
+          --grey-90-a60: rgba(12, 12, 13, 0.6);
+          --green-50: #30e60b;
+          --green-60: #12bc00;
+          --green-70: #058b00;
+          --green-80: #006504;
+          --green-90: #003706;
+          --orange-50: #ff9400;
+          --purple-70: #6200a4;
+          --red-50: #ff0039;
+          --red-50-a30: rgba(255, 0, 57, 0.3);
+          --red-60: #d70022;
+          --red-70: #a4000f;
+          --red-80: #5a0002;
+          --red-90: #3e0200;
+          --yellow-10: #ffff98;
+          --yellow-50: #ffe900;
+          --yellow-60: #d7b600;
+          --yellow-60-a30: rgba(215, 182, 0, 0.3);
+          --yellow-70: #a47f00;
+          --yellow-80: #715100;
+          --yellow-90: #3e2800;
+
+          /* https://hg.mozilla.org/mozilla-central/raw-file/tip/browser/themes/addons/dark/manifest.json */
+          --dark-frame: hsl(240, 5%, 5%);
+          --dark-icons: rgb(249, 249, 250, 0.7);
+          --dark-ntp-background: #2A2A2E;
+          --dark-ntp-text: rgb(249, 249, 250);
+          --dark-popup: #4a4a4f;
+          --dark-popup-border: #27272b;
+          --dark-popup-text: rgb(249, 249, 250);
+          --dark-sidebar: #38383D;
+          --dark-sidebar-text: rgb(249, 249, 250);
+          --dark-sidebar-border: rgba(255, 255, 255, 0.1);
+          --dark-tab-background-text: rgb(249, 249, 250);
+          --dark-tab-line: #0a84ff;
+          --dark-toolbar: hsl(240, 1%, 20%);
+          --dark-toolbar-bottom-separator: hsl(240, 5%, 5%);
+          --dark-toolbar-field: rgb(71, 71, 73);
+          --dark-toolbar-field-border: rgba(249, 249, 250, 0.2);
+          --dark-toolbar-field-separator: #5F6670;
+          --dark-toolbar-field-text: rgb(249, 249, 250);
+
+          /* https://searchfox.org/mozilla-central/rev/35873cfc312a6285f54aa5e4ec2d4ab911157522/browser/themes/shared/tabs.inc.css#24 */
+          --tab-loading-fill: #0A84FF;
+
+
+          --bg-color: var(--grey-10);
+          --text-color: var(--grey-90);
+        }
+
+        ${common}.rich-confirm :link {
+          color: var(--in-content-link-color);
+        }
+        ${common}.rich-confirm :visited {
+          color: var(--in-content-link-color-visited);
+        }
+
+        ${common}.rich-confirm :link:hover,
+        ${common}.rich-confirm :visited:hover {
+          color: var(--in-content-link-color-hover);
+        }
+
+        ${common}.rich-confirm :link:active,
+        ${common}.rich-confirm :visited:active {
+          color: var(--in-content-link-color-active);
+        }
+
+        @media (prefers-color-scheme: dark) {
+          ${common}.rich-confirm {
+            /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
+            --in-content-page-background: #2A2A2E /* rgb(42, 42, 46) */;
+            --in-content-page-color: rgb(249, 249, 250);
+            --in-content-text-color: var(--in-content-page-color);
+            --in-content-deemphasized-text: var(--grey-40);
+            --in-content-box-background: #202023;
+            --in-content-box-background-hover: /* rgba(249,249,250,0.15) */ rgb(calc((42 * 0.85) + (249 * 0.15)), calc((42 * 0.85) + (249 * 0.15)), calc((46 * 0.85) + (250 * 0.15)));
+            --in-content-box-background-active: /*rgba(249,249,250,0.2) */ rgb(calc((42 * 0.8) + (249 * 0.2)), calc((42 * 0.8) + (249 * 0.2)), calc((46 * 0.8) + (250 * 0.2)));
+            --in-content-box-background-odd: rgba(249,249,250,0.05);
+            --in-content-box-info-background: rgba(249,249,250,0.15);
+
+            --in-content-border-color: rgba(249,249,250,0.2);
+            --in-content-border-color-mixed: rgb(calc((42 * 0.8) + (249 * 0.2)), calc((42 * 0.8) + (249 * 0.2)), calc((46 * 0.8) + (250 * 0.2)));
+            --in-content-border-hover: rgba(249,249,250,0.3);
+            --in-content-border-hover-mixed: rgb(calc((42 * 0.7) + (249 * 0.3)), calc((42 * 0.7) + (249 * 0.3)), calc((46 * 0.7) + (250 * 0.3)));
+            --in-content-box-border-color: rgba(249,249,250,0.2);
+            --in-content-box-border-color-mixed: rgb(calc((42 * 0.8) + (249 * 0.2)), calc((42 * 0.8) + (249 * 0.2)), calc((46 * 0.8) + (250 * 0.2)));
+
+            --in-content-button-background: rgba(249,249,250,0.1);
+            --in-content-button-background-mixed: rgb(calc((42 * 0.9) + (249 * 0.1)), calc((42 * 0.9) + (249 * 0.1)), calc((46 * 0.9) + (250 * 0.1)));
+            --in-content-button-background-hover: rgba(249,249,250,0.15);
+            --in-content-button-background-hover-mixed: rgb(calc((42 * 0.85) + (249 * 0.15)), calc((42 * 0.85) + (249 * 0.15)), calc((46 * 0.85) + (250 * 0.15)));
+            --in-content-button-background-active: rgba(249,249,250,0.2);
+            --in-content-button-background-active-mixed: rgb(calc((42 * 0.8) + (249 * 0.2)), calc((42 * 0.8) + (249 * 0.2)), calc((46 * 0.8) + (250 * 0.2)));
+
+            --in-content-link-color: var(--blue-40);
+            --in-content-link-color-hover: var(--blue-50);
+            --in-content-link-color-active: var(--blue-60);
+
+            --bg-color: var(--in-content-page-background);
+            --text-color: var(--in-content-text-color);
+          }
+
+          ${common}.rich-confirm textarea,
+          ${common}.rich-confirm input {
+            background: var(--in-content-box-background);
+            border: thin solid var(--in-content-box-border-color-mixed);
+            color: var(--in-content-text-color);
+          }
+          ${common}.rich-confirm textarea:hover,
+          ${common}.rich-confirm input:hover {
+            border-color: var(--in-content-border-hover-mixed);
+          }
+          ${common}.rich-confirm textarea:focus,
+          ${common}.rich-confirm input:focus {
+            border-color: var(--in-content-border-focus);
+            box-shadow: 0 0 0 1px var(--in-content-border-active),
+                        0 0 0 4px var(--in-content-border-active-shadow);
+          }
+
+          ${common}.rich-confirm fieldset,
+          ${common}.rich-confirm hr {
+            border: thin solid var(--in-content-box-border-color-mixed);
+          }
+
+          ${common}.rich-confirm hr {
+            border-width: thin 0 0 0;
+          }
+
+          ${common}.rich-confirm button,
+          ${common}.rich-confirm select {
+            background: var(--in-content-button-background-mixed);
+            border: 0 none transparent;
+            color: var(--in-content-text-color);
+            margin: 4px;
+          }
+          ${common}.rich-confirm button:hover,
+          ${common}.rich-confirm select:hover {
+            background: var(--in-content-button-background-hover-mixed);
+          }
+          ${common}.rich-confirm button:focus,
+          ${common}.rich-confirm select:focus {
+            background: var(--in-content-button-background-active-mixed);
+            box-shadow: 0 0 0 1px var(--in-content-border-active),
+                        0 0 0 4px var(--in-content-border-active-shadow);
+          }
+          ${common}.rich-confirm option {
+            background: var(--bg-color);
+            color: var(--text-color);
+          }
+          ${common}.rich-confirm option:active,
+          ${common}.rich-confirm option:focus {
+            background: var(--in-content-item-selected);
+          }
+          ${common}.rich-confirm option:hover {
+            background: var(--in-content-item-hover-mixed);
+          }
+        }
+
         ${common}.rich-confirm,
         ${common}.rich-confirm-row {
           align-items: center;
@@ -67,7 +290,7 @@
           z-index: 999997;
         }
         ${common}.rich-confirm.popup-window {
-          background: -moz-dialog;
+          background: var(--bg-color);
         }
         ${common}.rich-confirm:not(.popup-window) {
           background: rgba(0, 0, 0, 0.45);
@@ -85,14 +308,14 @@
         }
 
         ${common}.rich-confirm-dialog {
-          color: -moz-dialogtext;
+          color: var(--text-color);
           font: message-box;
           overflow: auto;
           padding: 1em;
           z-index: 999999;
         }
         ${common}.rich-confirm-dialog:not(.popup-window) {
-          background: -moz-dialog;
+          background: var(--bg-color);
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
           margin: 0.5em;
           max-height: 90%;
@@ -107,34 +330,16 @@
         }
 
         ${common}.rich-confirm button {
+          -moz-appearance: button;
           font: message-box;
         }
 
         ${common}.rich-confirm-buttons button {
           display: block;
           margin-bottom: 0.2em;
+          padding: 0.4em;
           text-align: center;
           width: 100%;
-        }
-
-        ${common}.rich-confirm-buttons:not(.popup-window) button {
-          background: ButtonFace;
-          border: 1px solid ThreeDShadow;
-          border-radius: 0;
-          color: ButtonText;
-          padding: 0.4em;
-        }
-        ${common}.rich-confirm-buttons:not(.popup-window) button:focus {
-          border-color: Highlight;
-        }
-        ${common}.rich-confirm-buttons:not(.popup-window) button:focus::-moz-focus-inner {
-          border: none;
-        }
-
-        ${common}.rich-confirm-buttons:not(.popup-window) button:hover {
-          background: Highlight;
-          border-color: ThreeDShadow;
-          color: HighlightText;
         }
 
         ${common}.rich-confirm-check-label {
@@ -145,10 +350,6 @@
 
         ${common}.rich-confirm-check-label.hidden {
           display: none;
-        }
-
-        ${common}.rich-confirm.popup-window button {
-          -moz-appearance: button;
         }
 
         ${common}.rich-confirm .accesskey {
