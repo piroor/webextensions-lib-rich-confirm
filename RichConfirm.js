@@ -1024,7 +1024,7 @@
           if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
             return;
           timeout = null;
-          browser.tabs.executeScript(tabId, {
+          browser.tabs.executeScript(activeTab.id, {
             code:            `location.href`,
             matchAboutBlank: true,
             runAt:           'document_start'
