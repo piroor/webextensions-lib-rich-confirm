@@ -550,7 +550,11 @@
       window.addEventListener('pagehide', this.onUnload);
       window.addEventListener('beforeunload', this.onUnload);
 
-      this.focusTargets[0].focus();
+      const targets = this.focusTargets;
+      if (targets[0] == this.checkCheckbox)
+        targets[1].focus();
+      else
+        targets[0].focus();
 
       range.detach();
 
