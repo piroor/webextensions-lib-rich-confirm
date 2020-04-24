@@ -400,8 +400,8 @@
         this.params.type ? `type-${this.params.type}` : '',
         /win/i.test(navigator.platform) ? 'windows' :
           /mac/i.test(navigator.platform) ? 'mac' :
-          /linux/i.test(navigator.platform) ? 'linux' :
-          ''
+            /linux/i.test(navigator.platform) ? 'linux' :
+              ''
       ].join(' ');
       const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
@@ -1001,8 +1001,8 @@
       await new Promise((resolve, _reject) => {
         let timeout;
         const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
-                url :
-                `moz-extension://${location.host}/${url.replace(/^\//, '')}`
+          url :
+          `moz-extension://${location.host}/${url.replace(/^\//, '')}`
         const onTabUpdated = (tabId, updateInfo, _tab) => {
           if (updateInfo.status != 'complete' ||
               !browser.tabs.onUpdated.hasListener(onTabUpdated))
