@@ -798,7 +798,24 @@
       });
       if (onFocusChanged)
         browser.windows.onFocusChanged.removeListener(onFocusChanged);
-      browser.windows.remove(win.id);
+
+      // Step 1: move the window away from the visibl area.
+      browser.windows.update(win.id, {
+        top:  window.screen.height * 100,
+        left: window.screen.width * 100
+      }).then(async () => {
+        // Step 2: replace the content to a blank page
+        await browser.tabs.executeScript(activeTab.id, {
+          code:            `location.replace('about:blank')`,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        });
+        // Step 3: close the window.
+        // A window closed with a blank page won't appear
+        // in the "Recently Closed Windows" list.
+        browser.windows.remove(win.id);
+      });
+
       return result;
     }
   };
