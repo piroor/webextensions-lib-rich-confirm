@@ -5,7 +5,7 @@
 */
 'use strict';
 
-(function defineRichConfirm() {
+(function defineRichConfirm(uniqueKey) {
   class RichConfirm {
     constructor(params) {
       this.params = params;
@@ -778,32 +778,41 @@
       }
       const onSizeDetermined = params.onSizeDetermined;
       delete params.onSizeDetermined;
-      const onShownListener = (message, sender) => {
-        if (sender &&
-            sender.tab &&
-            sender.tab.id == tabId &&
-            message &&
-            typeof message == 'object' &&
-            message.type == 'rich-confirm-dialog-shown') {
-          onSizeDetermined({
-            width:       message.rect.width,
-            height:      message.rect.height,
-            left:        message.rect.left,
-            right:       message.rect.right,
-            top:         message.rect.top,
-            bottom:      message.rect.bottom,
-            frameWidth:  message.frameWidth,
-            frameHeight: message.frameHeight
-          });
-        }
-      };
-      if (typeof onSizeDetermined == 'function')
-        browser.runtime.onMessage.addListener(onShownListener);
+      let onMessage;
+      const promisedResult = new Promise((resolve, _reject) => {
+        onMessage = (message, _sender) => {
+          if (!message ||
+              typeof message != 'object' ||
+              message.uniqueKey != this.uniqueKey)
+            return;
+
+          switch (message.type) {
+            case 'rich-confirm-dialog-shown':
+              if (typeof onSizeDetermined == 'function')
+                onSizeDetermined({
+                  width:       message.width,
+                  height:      message.height,
+                  left:        message.left,
+                  right:       message.right,
+                  top:         message.top,
+                  bottom:      message.bottom,
+                  frameWidth:  message.frameWidth,
+                  frameHeight: message.frameHeight
+                });
+              break;
+
+            case 'rich-confirm-dialog-complete':
+              resolve(message.result);
+              break;
+          }
+        };
+        browser.runtime.onMessage.addListener(onMessage);
+      });
       try {
         await browser.tabs.executeScript(tabId, {
           code: `
             if (!window.RichConfirm)
-               (${defineRichConfirm.toString()})();
+               (${defineRichConfirm.toString()})(${this.uniqueKey});
           `,
           matchAboutBlank: true,
           runAt:           'document_start'
@@ -841,15 +850,14 @@
                       originalOnShown(content, inject);
                     const rect = content.closest('.rich-confirm-dialog').getBoundingClientRect();
                     browser.runtime.sendMessage({
-                      type: 'rich-confirm-dialog-shown',
-                      rect: {
-                        width:  rect.width,
-                        height: rect.height,
-                        top:    rect.top,
-                        left:   rect.left,
-                        right:  rect.right,
-                        bottom: rect.bottom
-                      },
+                      type:        'rich-confirm-dialog-shown',
+                      uniqueKey:   ${JSON.stringify(this.uniqueKey)},
+                      width:       rect.width,
+                      height:      rect.height,
+                      top:         rect.top,
+                      left:        rect.left,
+                      right:       rect.right,
+                      bottom:      rect.bottom,
                       frameWidth:  window.outerWidth - window.innerWidth,
                       frameHeight: window.outerHeight - window.innerHeight
                     });
@@ -859,7 +867,12 @@
                   }
                 }
               });
-              window.RichConfirm.result = await confirm.show();
+              const result = await confirm.show();
+              browser.runtime.sendMessage({
+                type:      'rich-confirm-dialog-complete',
+                uniqueKey: ${JSON.stringify(this.uniqueKey)},
+                result
+              });
             })(
               (${originalOnShown}),
               {${injectTransferable.join(',')}}
@@ -868,31 +881,21 @@
           matchAboutBlank: true,
           runAt:           'document_start'
         });
-        let result;
-        while (true) {
-          const results = await browser.tabs.executeScript(tabId, {
-            code:            `window.RichConfirm.result`,
-            matchAboutBlank: true,
-            runAt:           'document_start'
-          });
-          if (results.length > 0 &&
-          results[0] !== undefined) {
-            result = results[0];
-            break;
-          }
-          await new Promise((resolve, _reject) => setTimeout(resolve, 100));
-        }
+        // Don't return the promise directly here, instead await it
+        // because the "finally" block must be processed after
+        // the promise is resolved.
+        const result = await promisedResult;
         return result;
       }
       catch(error) {
-        console.error(error);
+        console.error(error, error.stack);
         return {
           buttonIndex: -1
         };
       }
       finally {
-        if (typeof onSizeDetermined == 'function')
-          browser.runtime.onMessage.removeListener(onShownListener);
+        if (browser.runtime.onMessage.hasListener(onMessage))
+          browser.runtime.onMessage.removeListener(onMessage);
       }
     }
 
@@ -905,8 +908,10 @@
       else {
         ownerWin = await browser.windows.get(winId);
       }
+
+      const url = params.url || 'about:blank';
       const win = await browser.windows.create({
-        url:    params.url || 'about:blank',
+        url,
         type:   'popup',
         // Step 1:
         // Open a small window to suppress annoying large white rect
@@ -953,19 +958,42 @@
         browser.windows.onFocusChanged.addListener(onFocusChanged);
 
       await new Promise((resolve, _reject) => {
+        let timeout;
+        const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
+                url :
+                `moz-extension://${location.host}/${url.replace(/^\//, '')}`
         const onTabUpdated = (tabId, updateInfo, _tab) => {
           if (updateInfo.status != 'complete' ||
               !browser.tabs.onUpdated.hasListener(onTabUpdated))
             return;
-          browser.tabs.onUpdated.removeListener(onTabUpdated);
-          resolve();
+          if (timeout)
+            clearTimeout(timeout);
+          browser.tabs.executeScript(tabId, {
+            code:            `location.href`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          }).then(loadedUrls => {
+            if (loadedUrls[0] != fullUrl)
+              return;
+            browser.tabs.onUpdated.removeListener(onTabUpdated);
+            resolve();
+          });
         };
-        setTimeout(() => {
+        timeout = setTimeout(() => {
           if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
             return;
-          browser.tabs.onUpdated.removeListener(onTabUpdated);
-          resolve();
-        }, 100);
+          timeout = null;
+          browser.tabs.executeScript(tabId, {
+            code:            `location.href`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          }).then(loadedUrls => {
+            if (loadedUrls[0] != fullUrl)
+              return;
+            browser.tabs.onUpdated.removeListener(onTabUpdated);
+            resolve();
+          });
+        }, 500);
         browser.tabs.onUpdated.addListener(onTabUpdated, {
           properties: ['status'],
           tabId:      activeTab.id
@@ -1020,7 +1048,7 @@
       return result;
     }
   };
-  RichConfirm.prototype.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
+  RichConfirm.uniqueKey = RichConfirm.prototype.uniqueKey = uniqueKey;
   window.RichConfirm = RichConfirm;
   return true; // this is required to run this script as a content script
-})();
+})(parseInt(Math.random() * Math.pow(2, 16)));
