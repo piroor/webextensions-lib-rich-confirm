@@ -166,12 +166,12 @@
           <div class="rich-confirm-row ${commonClass}">
             <div class="rich-confirm-dialog ${commonClass}">
               <div class="rich-confirm-content ${commonClass}"></div>
-              <div class="rich-confirm-buttons ${commonClass}"></div>
               <label class="rich-confirm-check-label ${commonClass}">
                 <input type="checkbox"
                        class="rich-confirm-check-checkbox ${commonClass}">
                 <span class="rich-confirm-check-message ${commonClass}"></span>
               </label>
+              <div class="rich-confirm-buttons ${commonClass}"></div>
             </div>
           </div>
         </div>
