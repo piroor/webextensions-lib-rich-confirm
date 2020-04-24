@@ -323,22 +323,55 @@
         }
 
         ${common}.rich-confirm-buttons {
+          align-items: center;
+          display: flex;
+          flex-direction: row;
+          margin: 0.5em 0 0;
+        }
+
+        ${common}.rich-confirm-buttons.type-dialog {
+          justify-content: flex-end;
+        }
+        ${common}.rich-confirm-buttons.type-dialog button + button {
+          margin-left: 1em;
+        }
+
+        ${common}.rich-confirm-buttons.type-common-dialog {
+          justify-content: center;
+        }
+        ${common}.rich-confirm-buttons.type-common-dialog button + button {
+          margin-left: 1em;
+        }
+
+        ${common}.rich-confirm-buttons.type-dialog.mac,
+        ${common}.rich-confirm-buttons.type-dialog.linux,
+        ${common}.rich-confirm-buttons.type-common-dialog.mac,
+        ${common}.rich-confirm-buttons.type-common-dialog.linux {
+          justify-content: flex-end;
+          flex-direction: row-reverse;
+        }
+        ${common}.rich-confirm-buttons.type-dialog.mac button + button,
+        ${common}.rich-confirm-buttons.type-dialog.linux button + button,
+        ${common}.rich-confirm-buttons.type-common-dialog.mac button + button,
+        ${common}.rich-confirm-buttons.type-common-dialog.linux button + button {
+          margin-right: 1em;
+        }
+
+        ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) {
           align-items: stretch;
           flex-direction: column;
-          justify-content: center;
-          margin: 0.5em 0 0;
         }
 
         ${common}.rich-confirm button {
           -moz-appearance: button;
           font: message-box;
+          text-align: center;
         }
 
-        ${common}.rich-confirm-buttons button {
+        ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) button {
           display: block;
           margin-bottom: 0.2em;
           padding: 0.4em;
-          text-align: center;
           width: 100%;
         }
 
@@ -361,7 +394,15 @@
       const range = document.createRange();
       range.selectNodeContents(document.body);
       range.collapse(false);
-      const commonClass = `${this.commonClass} ${this.params.popup ? 'popup-window' : ''}`;
+      const commonClass = [
+        this.commonClass,
+        this.params.popup ? 'popup-window' : '',
+        this.params.type ? `type-${this.params.type}` : '',
+        /win/i.test(navigator.platform) ? 'windows' :
+          /mac/i.test(navigator.platform) ? 'mac' :
+          /linux/i.test(navigator.platform) ? 'linux' :
+          ''
+      ].join(' ');
       const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
