@@ -638,9 +638,17 @@
                   try {
                     if (typeof originalOnShown == 'function')
                       originalOnShown(content, inject);
+                    const rect = content.closest('.rich-confirm-dialog').getBoundingClientRect();
                     browser.runtime.sendMessage({
                       type: 'rich-confirm-dialog-shown',
-                      rect: content.closest('.rich-confirm-dialog').getBoundingClientRect(),
+                      rect: {
+                        width:  rect.width,
+                        height: rect.height,
+                        top:    rect.top,
+                        left:   rect.left,
+                        right:  rect.right,
+                        bottom: rect.bottom
+                      },
                       frameWidth:  window.outerWidth - window.innerWidth,
                       frameHeight: window.outerHeight - window.innerHeight
                     });
@@ -697,7 +705,7 @@
         ownerWin = await browser.windows.get(winId);
       }
       const win = await browser.windows.create({
-        url:    'about:blank',
+        url:    params.url || 'about:blank',
         type:   'popup',
         // Step 1:
         // Open a small window to suppress annoying large white rect
