@@ -347,7 +347,7 @@
         ${common}.rich-confirm-buttons.type-dialog.linux,
         ${common}.rich-confirm-buttons.type-common-dialog.mac,
         ${common}.rich-confirm-buttons.type-common-dialog.linux {
-          justify-content: flex-end;
+          justify-content: flex-start;
           flex-direction: row-reverse;
         }
         ${common}.rich-confirm-buttons.type-dialog.mac button + button,
