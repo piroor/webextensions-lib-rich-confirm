@@ -904,7 +904,7 @@
                   try {
                     if (typeof originalOnShown == 'function')
                       originalOnShown(content, inject);
-                    const rect = content.closest('.rich-confirm-dialog').getBoundingClientRect();
+                    const rect = content.closest('.rich-confirm-row').getBoundingClientRect();
                     browser.runtime.sendMessage({
                       type:        'rich-confirm-dialog-shown',
                       uniqueKey:   ${JSON.stringify(this.uniqueKey)},
