@@ -916,33 +916,35 @@
       });
       const activeTab = win.tabs.find(tab => tab.active);
 
+      const promises = [];
+
       // Step 2:
       // Resize the window to expected size on outside of the screen.
       if (/mac/i.test(navigator.platform)) {
         // On macOS environment this operation must be done separately before
         // window move, because resizing of a window outside the visible area
         // moves the window into the main screen unexpectedly.
-        await browser.windows.update(win.id, {
+        promises.push(browser.windows.update(win.id, {
           width:  ownerWin.width,
           height: ownerWin.height
-        });
+        }));
         // Step 2.5:
         // Move the window outside the visible area, until all UI elements are
         // prepared.
         // The coordinates must be positive integer because large negative
         // coordinates don't work as expected on macOS.
-        await browser.windows.update(win.id, {
+        promises.push(browser.windows.update(win.id, {
           top:  window.screen.height * 100,
           left: window.screen.width * 100
-        });
+        }));
       }
       else {
-        await browser.windows.update(win.id, {
+        promises.push(browser.windows.update(win.id, {
           width:  ownerWin.width,
           height: ownerWin.height,
           top:  window.screen.height * 100,
           left: window.screen.width * 100
-        });
+        }));
       }
 
       const onFocusChanged = !params.modal ? null : windowId => {
@@ -952,7 +954,7 @@
       if (onFocusChanged)
         browser.windows.onFocusChanged.addListener(onFocusChanged);
 
-      await new Promise((resolve, _reject) => {
+      promises.push(new Promise((resolve, _reject) => {
         const onTabUpdated = (tabId, updateInfo, _tab) => {
           if (updateInfo.status != 'complete' ||
               !browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -970,7 +972,9 @@
           properties: ['status'],
           tabId:      activeTab.id
         });
-      });
+      }));
+
+      await Promise.all(promises);
 
       if (params.title) {
         browser.tabs.executeScript(activeTab.id, {
