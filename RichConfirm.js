@@ -814,6 +814,8 @@
     }
 
     static async showInTab(tabId, params) {
+      let start = Date.now();
+      const metrics = [];
       if (!params) {
         params = tabId;
         tabId = (await browser.tabs.getCurrent()).id;
@@ -859,6 +861,8 @@
           matchAboutBlank: true,
           runAt:           'document_start'
         });
+        metrics.push(`define RichConfirm in tab: ${Date.now() - start}`);
+        start = Date.now();
         const transferableParams = { ...params };
         const injectTransferable = [];
         const inject = params.inject || {};
@@ -923,6 +927,8 @@
           matchAboutBlank: true,
           runAt:           'document_start'
         });
+        metrics.push(`inject and execute: ${Date.now() - start}`);
+        console.log(`showInTab:\n${metrics.join('\n')}`);
         // Don't return the promise directly here, instead await it
         // because the "finally" block must be processed after
         // the promise is resolved.
@@ -942,6 +948,8 @@
     }
 
     static async showInPopup(winId, params) {
+      let start = Date.now();
+      const metrics = [];
       let ownerWin;
       if (!params) {
         params = winId;
@@ -950,6 +958,8 @@
       else {
         ownerWin = await browser.windows.get(winId);
       }
+      metrics.push(`get window: ${Date.now() - start}`);
+      start = Date.now();
 
       const url = params.url || 'about:blank';
       const win = await browser.windows.create({
@@ -961,6 +971,8 @@
         width:  16,
         height: 16
       });
+      metrics.push(`open window: ${Date.now() - start}`);
+      start = Date.now();
       const activeTab = win.tabs.find(tab => tab.active);
 
       // Step 2:
@@ -991,6 +1003,8 @@
           left: window.screen.width * 100
         });
       }
+      metrics.push(`move and resize window: ${Date.now() - start}`);
+      start = Date.now();
 
       const onFocusChanged = !params.modal ? null : windowId => {
         if (windowId == ownerWin.id)
@@ -1041,6 +1055,8 @@
           tabId:      activeTab.id
         });
       });
+      metrics.push(`wait tab load: ${Date.now() - start}`);
+      start = Date.now();
 
       if (params.title) {
         browser.tabs.executeScript(activeTab.id, {
@@ -1054,6 +1070,8 @@
         ...params,
         popup: true,
         async onSizeDetermined(coordinates) {
+          metrics.push(`ready to resize: ${Date.now() - start}`);
+          console.log(`showInPopup:\n${metrics.join('\n')}`);
           // Final Step:
           // Shrink the window and move it to the expected position.
           const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
