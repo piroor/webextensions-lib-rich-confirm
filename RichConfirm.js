@@ -273,6 +273,10 @@
           }
         }
 
+        body${common}.popup-window.calculating-dialog-size {
+          overflow: hidden;
+        }
+
         ${common}.rich-confirm,
         ${common}.rich-confirm-row {
           align-items: center;
