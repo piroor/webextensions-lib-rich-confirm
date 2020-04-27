@@ -50,7 +50,7 @@
       this.style.textContent = `
         /* color scheme */
         ${common}.rich-confirm,
-        body${common} {
+        :root${common} {
           /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
           --in-content-page-color: var(--grey-90);
           --in-content-page-background: var(--grey-10);
@@ -183,7 +183,7 @@
 
         @media (prefers-color-scheme: dark) {
           ${common}.rich-confirm,
-          body${common} {
+          :root${common} {
             /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
             --in-content-page-background: #2A2A2E /* rgb(42, 42, 46) */;
             --in-content-page-color: rgb(249, 249, 250);
@@ -273,8 +273,9 @@
           }
         }
 
-        body${common}.popup-window.calculating-dialog-size {
-          overflow: hidden;
+        :root.popup-window.calculating-dialog-size {
+          overflow: clip;
+          visibility: hidden;
         }
 
         ${common}.rich-confirm,
@@ -284,16 +285,16 @@
           flex-direction: column;
           justify-content: center;
         }
-        body:not(.calculating-dialog-size) ${common}.rich-confirm,
-        body:not(.calculating-dialog-size) ${common}.rich-confirm-row {
+        :root:not(.calculating-dialog-size) ${common}.rich-confirm,
+        :root:not(.calculating-dialog-size) ${common}.rich-confirm-row {
           bottom: 0;
           left: 0;
           position: fixed;
           right: 0;
           top: 0;
         }
-        body.dialog-size-determined ${common}.rich-confirm,
-        body.dialog-size-determined ${common}.rich-confirm-row {
+        :root.dialog-size-determined ${common}.rich-confirm,
+        :root.dialog-size-determined ${common}.rich-confirm-row {
           align-items: stretch;
         }
 
@@ -303,7 +304,7 @@
           z-index: 999997;
         }
         ${common}.rich-confirm.popup-window,
-        body${common}.popup-window {
+        :root${common}.popup-window body {
           background: var(--bg-color);
         }
         ${common}.rich-confirm:not(.popup-window) {
@@ -972,8 +973,10 @@
         // Step 1:
         // Open a small window to suppress annoying large white rect
         // covering on the window.
-        width:  16,
-        height: 16
+        // Note that too small size (like 16x16) can produce invalid
+        // innerWidth/Height/outerWidth/Height in the content area on Linux.
+        width:  100,
+        height: 100
       });
       const activeTab = win.tabs.find(tab => tab.active);
 
@@ -1027,15 +1030,21 @@
         });
       });
 
-      await browser.tabs.executeScript(activeTab.id, {
-        code:            `{
+      const frameSize = await browser.tabs.executeScript(activeTab.id, {
+        code:            `(() => {
+          const frameSize = {
+            width: window.outerWidth - window.innerWidth,
+            height: window.outerHeight - window.innerHeight
+          };
+          const classList = document.documentElement.classList;
+          classList.add('rich-confirm-${uniqueKey}');
+          classList.add('popup-window');
+          classList.add('calculating-dialog-size');
           const style = document.body.style;
           style.setProperty('width', '${ownerWin.width}px', 'important');
           style.setProperty('height', '${ownerWin.height}px', 'important');
-          document.body.classList.add('rich-confirm-${uniqueKey}');
-          document.body.classList.add('popup-window');
-          document.body.classList.add('calculating-dialog-size');
-        }`,
+          return frameSize;
+        })()`,
         matchAboutBlank: true,
         runAt:           'document_start'
       });
@@ -1052,28 +1061,29 @@
         ...params,
         popup: true,
         async onSizeDetermined(coordinates) {
-          browser.tabs.executeScript(activeTab.id, {
-            code:            `{
-              const style = document.body.style;
-              style.width = '';
-              style.height = '';
-              document.body.classList.add('dialog-size-determined');
-              document.body.classList.remove('calculating-dialog-size');
-            }`,
-            matchAboutBlank: true,
-            runAt:           'document_start'
-          });
           // Final Step:
           // Shrink the window and move it to the expected position.
           const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
-          const width  = Math.ceil((coordinates.width + coordinates.frameWidth) * safetyFactor);
-          const height = Math.ceil((coordinates.height + coordinates.frameHeight));
+          const width  = Math.ceil((coordinates.width + frameSize[0].width) * safetyFactor);
+          const height = Math.ceil((coordinates.height + frameSize[0].height));
           browser.windows.update(win.id, {
             width,
             height,
             top:  Math.floor(ownerWin.top + ((ownerWin.height - height) / 2)),
             left: Math.floor(ownerWin.left + ((ownerWin.width - width) / 2))
           })
+          browser.tabs.executeScript(activeTab.id, {
+            code:            `{
+              const style = document.body.style;
+              style.width = '';
+              style.height = '';
+              const classList = document.documentElement.classList;
+              classList.add('dialog-size-determined');
+              classList.remove('calculating-dialog-size');
+            }`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          });
         }
       });
       if (onFocusChanged)
