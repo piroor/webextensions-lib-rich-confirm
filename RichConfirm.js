@@ -1076,11 +1076,11 @@
 
       // A window closed with a blank page won't appear
       // in the "Recently Closed Windows" list.
-        browser.tabs.executeScript(activeTab.id, {
-          code:            `location.replace('about:blank')`,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        }).then(() => {
+      browser.tabs.executeScript(activeTab.id, {
+        code:            `location.replace('about:blank')`,
+        matchAboutBlank: true,
+        runAt:           'document_start'
+      }).then(() => {
         browser.windows.remove(win.id);
       });
 
