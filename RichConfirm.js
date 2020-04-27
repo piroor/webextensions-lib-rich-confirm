@@ -292,6 +292,10 @@
           right: 0;
           top: 0;
         }
+        body.dialog-size-determined ${common}.rich-confirm,
+        body.dialog-size-determined ${common}.rich-confirm-row {
+          align-items: stretch;
+        }
 
         ${common}.rich-confirm {
           left:0;
@@ -1053,6 +1057,7 @@
               const style = document.body.style;
               style.width = '';
               style.height = '';
+              document.body.classList.add('dialog-size-determined');
               document.body.classList.remove('calculating-dialog-size');
             }`,
             matchAboutBlank: true,
