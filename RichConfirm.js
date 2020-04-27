@@ -987,6 +987,19 @@
       if (onFocusChanged)
         browser.windows.onFocusChanged.addListener(onFocusChanged);
 
+      let onClosed;
+      const promisedDismissed = new Promise((resolve, _reject) => {
+        onClosed = windowId => {
+          if (windowId == ownerWin.id)
+            resolve(true);
+        };
+      });
+      browser.windows.onRemoved.addListener(onClosed);
+
+      const [dismissed, result] = await Promise.race([
+        promisedDismissed,
+        (async () => {
+      try {
       await new Promise((resolve, _reject) => {
         let timeout;
         const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
@@ -1057,7 +1070,7 @@
         });
       }
 
-      const result = await this.showInTab(activeTab.id, {
+      return this.showInTab(activeTab.id, {
         ...params,
         popup: true,
         async onSizeDetermined(coordinates) {
@@ -1086,9 +1099,19 @@
           });
         }
       });
+      }
+      catch(error) {
+        console.error(error);
+        return null;
+      }
+        })()
+      ]);
+
       if (onFocusChanged)
         browser.windows.onFocusChanged.removeListener(onFocusChanged);
+      browser.windows.onRemoved.removeListener(onClosed);
 
+      if (!dismissed) {
       // A window closed with a blank page won't appear
       // in the "Recently Closed Windows" list.
       browser.tabs.executeScript(activeTab.id, {
@@ -1098,8 +1121,9 @@
       }).then(() => {
         browser.windows.remove(win.id);
       });
+      }
 
-      return result;
+      return result || { buttonIndex: -1 };
     }
   };
   RichConfirm.uniqueKey = RichConfirm.prototype.uniqueKey = uniqueKey;
