@@ -999,111 +999,111 @@
       const [dismissed, result] = await Promise.race([
         promisedDismissed,
         (async () => {
-      try {
-      await new Promise((resolve, _reject) => {
-        let timeout;
-        const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
-          url :
-          `moz-extension://${location.host}/${url.replace(/^\//, '')}`
-        const onTabUpdated = (tabId, updateInfo, _tab) => {
-          if (updateInfo.status != 'complete' ||
-              !browser.tabs.onUpdated.hasListener(onTabUpdated))
-            return;
-          if (timeout)
-            clearTimeout(timeout);
-          browser.tabs.executeScript(tabId, {
-            code:            `location.href`,
-            matchAboutBlank: true,
-            runAt:           'document_start'
-          }).then(loadedUrls => {
-            if (loadedUrls[0] != fullUrl)
-              return;
-            browser.tabs.onUpdated.removeListener(onTabUpdated);
-            resolve();
-          });
-        };
-        timeout = setTimeout(() => {
-          if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
-            return;
-          timeout = null;
-          browser.tabs.executeScript(activeTab.id, {
-            code:            `location.href`,
-            matchAboutBlank: true,
-            runAt:           'document_start'
-          }).then(loadedUrls => {
-            if (loadedUrls[0] != fullUrl)
-              return;
-            browser.tabs.onUpdated.removeListener(onTabUpdated);
-            resolve();
-          });
-        }, 500);
-        browser.tabs.onUpdated.addListener(onTabUpdated, {
-          properties: ['status'],
-          tabId:      activeTab.id
-        });
-      });
+          try {
+            await new Promise((resolve, _reject) => {
+              let timeout;
+              const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
+                url :
+                `moz-extension://${location.host}/${url.replace(/^\//, '')}`
+              const onTabUpdated = (tabId, updateInfo, _tab) => {
+                if (updateInfo.status != 'complete' ||
+                    !browser.tabs.onUpdated.hasListener(onTabUpdated))
+                  return;
+                if (timeout)
+                  clearTimeout(timeout);
+                browser.tabs.executeScript(tabId, {
+                  code:            `location.href`,
+                  matchAboutBlank: true,
+                  runAt:           'document_start'
+                }).then(loadedUrls => {
+                  if (loadedUrls[0] != fullUrl)
+                    return;
+                  browser.tabs.onUpdated.removeListener(onTabUpdated);
+                  resolve();
+                });
+              };
+              timeout = setTimeout(() => {
+                if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
+                  return;
+                timeout = null;
+                browser.tabs.executeScript(activeTab.id, {
+                  code:            `location.href`,
+                  matchAboutBlank: true,
+                  runAt:           'document_start'
+                }).then(loadedUrls => {
+                  if (loadedUrls[0] != fullUrl)
+                    return;
+                  browser.tabs.onUpdated.removeListener(onTabUpdated);
+                  resolve();
+                });
+              }, 500);
+              browser.tabs.onUpdated.addListener(onTabUpdated, {
+                properties: ['status'],
+                tabId:      activeTab.id
+              });
+            });
 
-      const frameSize = await browser.tabs.executeScript(activeTab.id, {
-        code:            `(() => {
-          const frameSize = {
-            width: window.outerWidth - window.innerWidth,
-            height: window.outerHeight - window.innerHeight
-          };
-          const classList = document.documentElement.classList;
-          classList.add('rich-confirm-${uniqueKey}');
-          classList.add('popup-window');
-          classList.add('calculating-dialog-size');
-          const style = document.body.style;
-          style.setProperty('width', '${ownerWin.width}px', 'important');
-          style.setProperty('height', '${ownerWin.height}px', 'important');
-          return frameSize;
-        })()`,
-        matchAboutBlank: true,
-        runAt:           'document_start'
-      });
+            const frameSize = await browser.tabs.executeScript(activeTab.id, {
+              code:            `(() => {
+                const frameSize = {
+                  width: window.outerWidth - window.innerWidth,
+                  height: window.outerHeight - window.innerHeight
+                };
+                const classList = document.documentElement.classList;
+                classList.add('rich-confirm-${uniqueKey}');
+                classList.add('popup-window');
+                classList.add('calculating-dialog-size');
+                const style = document.body.style;
+                style.setProperty('width', '${ownerWin.width}px', 'important');
+                style.setProperty('height', '${ownerWin.height}px', 'important');
+                return frameSize;
+              })()`,
+              matchAboutBlank: true,
+              runAt:           'document_start'
+            });
 
-      if (params.title) {
-        browser.tabs.executeScript(activeTab.id, {
-          code:            `document.title = ${JSON.stringify(params.title)};`,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        });
-      }
+            if (params.title) {
+              browser.tabs.executeScript(activeTab.id, {
+                code:            `document.title = ${JSON.stringify(params.title)};`,
+                matchAboutBlank: true,
+                runAt:           'document_start'
+              });
+            }
 
-      return this.showInTab(activeTab.id, {
-        ...params,
-        popup: true,
-        async onSizeDetermined(coordinates) {
-          // Final Step:
-          // Shrink the window and move it to the expected position.
-          const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
-          const width  = Math.ceil((coordinates.width + frameSize[0].width) * safetyFactor);
-          const height = Math.ceil((coordinates.height + frameSize[0].height));
-          browser.windows.update(win.id, {
-            width,
-            height,
-            top:  Math.floor(ownerWin.top + ((ownerWin.height - height) / 2)),
-            left: Math.floor(ownerWin.left + ((ownerWin.width - width) / 2))
-          })
-          browser.tabs.executeScript(activeTab.id, {
-            code:            `{
-              const style = document.body.style;
-              style.width = '';
-              style.height = '';
-              const classList = document.documentElement.classList;
-              classList.add('dialog-size-determined');
-              classList.remove('calculating-dialog-size');
-            }`,
-            matchAboutBlank: true,
-            runAt:           'document_start'
-          });
-        }
-      });
-      }
-      catch(error) {
-        console.error(error);
-        return null;
-      }
+            return this.showInTab(activeTab.id, {
+              ...params,
+              popup: true,
+              async onSizeDetermined(coordinates) {
+                // Final Step:
+                // Shrink the window and move it to the expected position.
+                const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
+                const width  = Math.ceil((coordinates.width + frameSize[0].width) * safetyFactor);
+                const height = Math.ceil((coordinates.height + frameSize[0].height));
+                browser.windows.update(win.id, {
+                  width,
+                  height,
+                  top:  Math.floor(ownerWin.top + ((ownerWin.height - height) / 2)),
+                  left: Math.floor(ownerWin.left + ((ownerWin.width - width) / 2))
+                })
+                browser.tabs.executeScript(activeTab.id, {
+                  code:            `{
+                    const style = document.body.style;
+                    style.width = '';
+                    style.height = '';
+                    const classList = document.documentElement.classList;
+                    classList.add('dialog-size-determined');
+                    classList.remove('calculating-dialog-size');
+                  }`,
+                  matchAboutBlank: true,
+                  runAt:           'document_start'
+                });
+              }
+            });
+          }
+          catch(error) {
+            console.error(error);
+            return null;
+          }
         })()
       ]);
 
@@ -1112,15 +1112,15 @@
       browser.windows.onRemoved.removeListener(onClosed);
 
       if (!dismissed) {
-      // A window closed with a blank page won't appear
-      // in the "Recently Closed Windows" list.
-      browser.tabs.executeScript(activeTab.id, {
-        code:            `location.replace('about:blank')`,
-        matchAboutBlank: true,
-        runAt:           'document_start'
-      }).then(() => {
-        browser.windows.remove(win.id);
-      });
+        // A window closed with a blank page won't appear
+        // in the "Recently Closed Windows" list.
+        browser.tabs.executeScript(activeTab.id, {
+          code:            `location.replace('about:blank')`,
+          matchAboutBlank: true,
+          runAt:           'document_start'
+        }).then(() => {
+          browser.windows.remove(win.id);
+        });
       }
 
       return result || { buttonIndex: -1 };
