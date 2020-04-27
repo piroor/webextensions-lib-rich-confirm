@@ -49,7 +49,8 @@
       const common = `.${this.commonClass}`;
       this.style.textContent = `
         /* color scheme */
-        ${common}.rich-confirm {
+        ${common}.rich-confirm,
+        body${common} {
           /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
           --in-content-page-color: var(--grey-90);
           --in-content-page-background: var(--grey-10);
@@ -181,7 +182,8 @@
         }
 
         @media (prefers-color-scheme: dark) {
-          ${common}.rich-confirm {
+          ${common}.rich-confirm,
+          body${common} {
             /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
             --in-content-page-background: #2A2A2E /* rgb(42, 42, 46) */;
             --in-content-page-color: rgb(249, 249, 250);
@@ -274,10 +276,13 @@
         ${common}.rich-confirm,
         ${common}.rich-confirm-row {
           align-items: center;
-          bottom: 0;
           display: flex;
           flex-direction: column;
           justify-content: center;
+        }
+        body:not(.calculating-dialog-size) ${common}.rich-confirm,
+        body:not(.calculating-dialog-size) ${common}.rich-confirm-row {
+          bottom: 0;
           left: 0;
           position: fixed;
           right: 0;
@@ -289,7 +294,8 @@
           pointer-events: none;
           z-index: 999997;
         }
-        ${common}.rich-confirm.popup-window {
+        ${common}.rich-confirm.popup-window,
+        body${common}.popup-window {
           background: var(--bg-color);
         }
         ${common}.rich-confirm:not(.popup-window) {
@@ -963,37 +969,6 @@
       });
       const activeTab = win.tabs.find(tab => tab.active);
 
-      const promises = [];
-
-      // Step 2:
-      // Resize the window to expected size on outside of the screen.
-      if (/mac/i.test(navigator.platform)) {
-        // On macOS environment this operation must be done separately before
-        // window move, because resizing of a window outside the visible area
-        // moves the window into the main screen unexpectedly.
-        promises.push(browser.windows.update(win.id, {
-          width:  ownerWin.width,
-          height: ownerWin.height
-        }));
-        // Step 2.5:
-        // Move the window outside the visible area, until all UI elements are
-        // prepared.
-        // The coordinates must be positive integer because large negative
-        // coordinates don't work as expected on macOS.
-        promises.push(browser.windows.update(win.id, {
-          top:  window.screen.height * 100,
-          left: window.screen.width * 100
-        }));
-      }
-      else {
-        promises.push(browser.windows.update(win.id, {
-          width:  ownerWin.width,
-          height: ownerWin.height,
-          top:  window.screen.height * 100,
-          left: window.screen.width * 100
-        }));
-      }
-
       const onFocusChanged = !params.modal ? null : windowId => {
         if (windowId == ownerWin.id)
           browser.windows.update(win.id, { focused: true });
@@ -1001,7 +976,7 @@
       if (onFocusChanged)
         browser.windows.onFocusChanged.addListener(onFocusChanged);
 
-      promises.push(new Promise((resolve, _reject) => {
+      await new Promise((resolve, _reject) => {
         let timeout;
         const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
           url :
@@ -1042,9 +1017,20 @@
           properties: ['status'],
           tabId:      activeTab.id
         });
-      }));
+      });
 
-      await Promise.all(promises);
+      await browser.tabs.executeScript(activeTab.id, {
+        code:            `{
+          const style = document.body.style;
+          style.setProperty('width', '${ownerWin.width}px', 'important');
+          style.setProperty('height', '${ownerWin.height}px', 'important');
+          document.body.classList.add('rich-confirm-${uniqueKey}');
+          document.body.classList.add('popup-window');
+          document.body.classList.add('calculating-dialog-size');
+        }`,
+        matchAboutBlank: true,
+        runAt:           'document_start'
+      });
 
       if (params.title) {
         browser.tabs.executeScript(activeTab.id, {
@@ -1058,6 +1044,16 @@
         ...params,
         popup: true,
         async onSizeDetermined(coordinates) {
+          browser.tabs.executeScript(activeTab.id, {
+            code:            `{
+              const style = document.body.style;
+              style.width = '';
+              style.height = '';
+              document.body.classList.remove('calculating-dialog-size');
+            }`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          });
           // Final Step:
           // Shrink the window and move it to the expected position.
           const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
