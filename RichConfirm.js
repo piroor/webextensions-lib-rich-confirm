@@ -990,13 +990,15 @@
       let onClosed;
       const promisedDismissed = new Promise((resolve, _reject) => {
         onClosed = windowId => {
-          if (windowId == ownerWin.id)
-            resolve(true);
+          if (windowId == win.id) {
+            win.closed = true;
+            resolve({ buttonIndex: -1 });
+          }
         };
       });
       browser.windows.onRemoved.addListener(onClosed);
 
-      const [dismissed, result] = await Promise.race([
+      const result = await Promise.race([
         promisedDismissed,
         (async () => {
           try {
@@ -1111,7 +1113,7 @@
         browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.onRemoved.removeListener(onClosed);
 
-      if (!dismissed) {
+      if (!win.closed) {
         // A window closed with a blank page won't appear
         // in the "Recently Closed Windows" list.
         browser.tabs.executeScript(activeTab.id, {
@@ -1123,7 +1125,7 @@
         });
       }
 
-      return result || { buttonIndex: -1 };
+      return result;
     }
   };
   RichConfirm.uniqueKey = RichConfirm.prototype.uniqueKey = uniqueKey;
