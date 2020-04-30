@@ -976,7 +976,11 @@
         // Note that too small size (like 16x16) can produce invalid
         // innerWidth/Height/outerWidth/Height in the content area on Linux.
         width:  100,
-        height: 100
+        height: 100,
+        // These coordinates must be positive integer because large negative
+        // coordinates don't work as expected on macOS.
+        top:    window.screen.height * 100,
+        left:   window.screen.width * 100
       });
       const activeTab = win.tabs.find(tab => tab.active);
 
