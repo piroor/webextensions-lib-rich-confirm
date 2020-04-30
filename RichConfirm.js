@@ -977,10 +977,16 @@
         // innerWidth/Height/outerWidth/Height in the content area on Linux.
         width:  100,
         height: 100,
+      });
+      // Due to a Firefox's bug we cannot open popup type window at
+      // outside of the visible area.
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
+      // Thus we move the window immediately after it is opened.
+      browser.windows.update(win.id, {
         // These coordinates must be positive integer because large negative
         // coordinates don't work as expected on macOS.
-        top:    window.screen.height * 100,
-        left:   window.screen.width * 100
+        top:  window.screen.height * 100,
+        left: window.screen.width * 100
       });
       const activeTab = win.tabs.find(tab => tab.active);
 
