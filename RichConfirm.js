@@ -977,6 +977,8 @@
         // innerWidth/Height/outerWidth/Height in the content area on Linux.
         width:  100,
         height: 100,
+        // These coordinates must be positive integer because large negative
+        // coordinates don't work as expected on macOS.
         top:    window.screen.height * 100,
         left:   window.screen.width * 100
       });
@@ -985,8 +987,6 @@
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
       // Thus we move the window immediately after it is opened.
       browser.windows.update(win.id, {
-        // These coordinates must be positive integer because large negative
-        // coordinates don't work as expected on macOS.
         top:  window.screen.height * 100,
         left: window.screen.width * 100
       });
