@@ -976,7 +976,7 @@
         width:  Math.ceil(simulatedRect.width * safetyFactor),
         height: Math.ceil(simulatedRect.height * safetyFactor)
       };
-      //simulation.hide();
+      simulation.hide();
       // This dimension is not accurate because we must think about
       // the size of the window frame, but currently I don't know how to
       // calculate it here...
