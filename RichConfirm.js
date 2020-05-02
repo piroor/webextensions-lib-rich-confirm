@@ -854,6 +854,20 @@
             return;
 
           switch (message.type) {
+            case 'rich-confirm-dialog-shown':
+              if (typeof params.onReady == 'function') {
+                try {
+                  params.onReady({
+                    width:  message.dialogWidth,
+                    height: message.dialogHeight
+                  });
+                }
+                catch(error) {
+                  console.error(error);
+                }
+              }
+              break;
+
             case 'rich-confirm-dialog-complete':
               resolve(message.result);
               break;
@@ -907,7 +921,23 @@
                   }
                 }
               });
-              const result = await confirm.show();
+              const result = await confirm.show({
+                onShown(content, _injected) {
+                  const dialog = content.parentNode;
+                  const rect   = dialog.getBoundingClientRect();
+                  const style  = window.getComputedStyle(dialog, null);
+                  // End padding is not included in the scrillable size,
+                  // so we manually add them.
+                  const rightPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-right')) || 0;
+                  const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
+                  browser.runtime.sendMessage({
+                    type:         'rich-confirm-dialog-shown',
+                    uniqueKey:    ${JSON.stringify(this.uniqueKey)},
+                    dialogWidth:  rect.width + dialog.scrollLeftMax + rightPadding,
+                    dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
+                  });
+                }
+              });
               browser.runtime.sendMessage({
                 type:      'rich-confirm-dialog-complete',
                 uniqueKey: ${JSON.stringify(this.uniqueKey)},
@@ -1033,7 +1063,7 @@
         promisedDismissed,
         (async () => {
           try {
-            await new Promise((resolve, _reject) => {
+            const frameSize = await new Promise((resolve, _reject) => {
               let timeout;
               const code = `(() => {
                 ${params.title ? 'document.title = ' + JSON.stringify(params.title) +';' : ''}
@@ -1082,22 +1112,30 @@
                 properties: ['status'],
                 tabId:      activeTab.id
               });
-            }).then(frameSize => {
-              const actualWidth  = frameSize.width + simulatedSize.width;
-              const actualHeight = frameSize.height + simulatedSize.height;
-              browser.windows.update(win.id, {
-                width:  actualWidth,
-                height: actualHeight,
-                // We should reposition the dialog at truly center of the
-                // owner window, but it will produce an annoying slip of
-                // the window, so I give up for now.
-                //top:    Math.floor(ownerWin.top + ((ownerWin.height - actualHeight) / 2)),
-                //left:   Math.floor(ownerWin.left + ((ownerWin.width - actualWidth) / 2))
-              });
             });
+
             return this.showInTab(activeTab.id, {
               ...params,
-              popup: true
+              popup: true,
+              onReady(dialogSize) {
+                const actualWidth  = Math.min(
+                  Math.ceil(dialogSize.width + frameSize.width),
+                  ownerWin.left + ownerWin.width - simulatedSize.left
+                );
+                const actualHeight = Math.min(
+                  Math.ceil(dialogSize.height + frameSize.height),
+                  ownerWin.top + ownerWin.height - simulatedSize.top
+                );
+                browser.windows.update(win.id, {
+                  width:  actualWidth,
+                  height: actualHeight,
+                  // We should reposition the dialog at truly center of the
+                  // owner window, but it will produce an annoying slip of
+                  // the window, so I give up for now.
+                  //top:    Math.floor(ownerWin.top + ((ownerWin.height - actualHeight) / 2)),
+                  //left:   Math.floor(ownerWin.left + ((ownerWin.width - actualWidth) / 2))
+                });
+              }
             });
           }
           catch(error) {
