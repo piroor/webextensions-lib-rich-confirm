@@ -971,7 +971,7 @@
       const simulatedRect   = simulatedDialog.getBoundingClientRect();
 
       // Safe guard for scrollbar due to unexpected line breaks
-      const safetyFactor = 1.05;
+      const safetyFactor  = 1.05;
       const simulatedSize = {
         width:  Math.ceil(simulatedRect.width * safetyFactor),
         height: Math.ceil(simulatedRect.height * safetyFactor)
