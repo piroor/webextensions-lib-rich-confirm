@@ -975,18 +975,21 @@
         // covering on the window.
         // Note that too small size (like 16x16) can produce invalid
         // innerWidth/Height/outerWidth/Height in the content area on Linux.
+        // 100x100 is the secure minimum size defined at
+        // nsGlobalWindowOuter::CheckSecurityWidthAndHeight:
+        // https://searchfox.org/mozilla-central/rev/710d6e1015d03343b067b92e6f1f775a0b1cad6f/dom/base/nsGlobalWindowOuter.cpp#4060
         width:  100,
         height: 100,
-        // These coordinates must be positive integer because large negative
-        // coordinates don't work as expected on macOS.
-        top:    window.screen.height * 100,
-        left:   window.screen.width * 100
+        top:    ownerWin.top + Math.floor((ownerWin.height - 100) / 2),
+        left:   ownerWin.left + Math.floor((ownerWin.width - 100) / 2)
       });
-      // Due to a Firefox's bug we cannot open popup type window at
-      // outside of the visible area.
+      // Due to a Firefox's bug we cannot open popup type window
+      // at specified position.
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
       // Thus we move the window immediately after it is opened.
       browser.windows.update(win.id, {
+        // These coordinates must be positive integer because large negative
+        // coordinates don't work as expected on macOS.
         top:  window.screen.height * 100,
         left: window.screen.width * 100
       });
