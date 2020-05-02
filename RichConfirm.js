@@ -44,6 +44,8 @@
     }
 
     buildUI() {
+      if (this.ui)
+        return;
       this.style = document.createElement('style');
       this.style.setAttribute('type', 'text/css');
       const common = `.${this.commonClass}`;
@@ -273,11 +275,6 @@
           }
         }
 
-        :root.popup-window.calculating-dialog-size {
-          overflow: clip;
-          visibility: hidden;
-        }
-
         ${common}.rich-confirm,
         ${common}.rich-confirm-row {
           align-items: center;
@@ -285,17 +282,14 @@
           flex-direction: column;
           justify-content: center;
         }
-        :root:not(.calculating-dialog-size) ${common}.rich-confirm,
-        :root:not(.calculating-dialog-size) ${common}.rich-confirm-row {
+        ${common}.rich-confirm:not(.simulation),
+        ${common}.rich-confirm-row:not(.simulation) {
+          align-items: stretch;
           bottom: 0;
           left: 0;
           position: fixed;
           right: 0;
           top: 0;
-        }
-        :root.dialog-size-determined ${common}.rich-confirm,
-        :root.dialog-size-determined ${common}.rich-confirm-row {
-          align-items: stretch;
         }
 
         ${common}.rich-confirm {
@@ -403,6 +397,20 @@
         ${common}.rich-confirm .accesskey {
           text-decoration: underline;
         }
+
+
+        ${common}.rich-confirm.simulation {
+          max-height: 0 !important;
+          max-width: 0 !important;
+          overflow: hidden !important;
+          visibility: hidden !important;
+        }
+        ${common}.rich-confirm-row.simulation {
+          position: static !important;
+        }
+        ${common}.rich-confirm-dialog.simulation {
+          border:  1px solid;
+        }
       `;
       document.head.appendChild(this.style);
 
@@ -412,6 +420,7 @@
       const commonClass = [
         this.commonClass,
         this.params.popup ? 'popup-window' : '',
+        this.params.simulation ? 'simulation' : '',
         this.params.type ? `type-${this.params.type}` : '',
         /win/i.test(navigator.platform) ? 'windows' :
           /mac/i.test(navigator.platform) ? 'mac' :
@@ -577,10 +586,12 @@
         catch(_error) {
         }
       }
+
+      this.ui.classList.add('show');
+
       if (typeof onShown == 'function')
         onShown(this.content, this.params.inject || {});
 
-      this.ui.classList.add('show');
       return new Promise((resolve, reject) => {
         this._resolve = resolve;
         this._rejecte = reject;
@@ -833,8 +844,6 @@
         params = tabId;
         tabId = (await browser.tabs.getCurrent()).id;
       }
-      const onSizeDetermined = params.onSizeDetermined;
-      delete params.onSizeDetermined;
       let onMessage;
       const promisedResult = new Promise((resolve, _reject) => {
         onMessage = (message, _sender) => {
@@ -844,20 +853,6 @@
             return;
 
           switch (message.type) {
-            case 'rich-confirm-dialog-shown':
-              if (typeof onSizeDetermined == 'function')
-                onSizeDetermined({
-                  width:       message.width,
-                  height:      message.height,
-                  left:        message.left,
-                  right:       message.right,
-                  top:         message.top,
-                  bottom:      message.bottom,
-                  frameWidth:  message.frameWidth,
-                  frameHeight: message.frameHeight
-                });
-              break;
-
             case 'rich-confirm-dialog-complete':
               resolve(message.result);
               break;
@@ -905,19 +900,6 @@
                   try {
                     if (typeof originalOnShown == 'function')
                       originalOnShown(content, inject);
-                    const rect = content.closest('.rich-confirm-row').getBoundingClientRect();
-                    browser.runtime.sendMessage({
-                      type:        'rich-confirm-dialog-shown',
-                      uniqueKey:   ${JSON.stringify(this.uniqueKey)},
-                      width:       rect.width,
-                      height:      rect.height,
-                      top:         rect.top,
-                      left:        rect.left,
-                      right:       rect.right,
-                      bottom:      rect.bottom,
-                      frameWidth:  window.outerWidth - window.innerWidth,
-                      frameHeight: window.outerHeight - window.innerHeight
-                    });
                   }
                   catch(error) {
                     console.error(error);
@@ -966,33 +948,66 @@
         ownerWin = await browser.windows.get(winId);
       }
 
-      const url = params.url || 'about:blank';
+      let simulation = new this({
+        ...params,
+        popup: true,
+        simulation: true
+      });
+      simulation.buildUI();
+      const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
+      simulatedContainer.style.minWidth = `${ownerWin.width}px`;
+      simulatedContainer.style.minHeight = `${ownerWin.height}px`;
+      await new Promise((resolve, _reject) => {
+        simulation.show({
+          onShown() {
+            setTimeout(() => {
+              resolve();
+            }, 0);
+          }
+        });
+      });
+      const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
+      const simulatedRect   = simulatedDialog.getBoundingClientRect();
+
+      // Safe guard for scrollbar due to unexpected line breaks
+      const safetyFactor = 1.05;
+      const simulatedSize = {
+        width:  Math.ceil(simulatedRect.width * safetyFactor),
+        height: Math.ceil(simulatedRect.height * safetyFactor)
+      };
+      //simulation.hide();
+      // This dimension is not accurate because we must think about
+      // the size of the window frame, but currently I don't know how to
+      // calculate it here...
+
+      simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
+      simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
+
+      const url     = params.url || 'about:blank';
+      const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
+        url :
+        `moz-extension://${location.host}/${url.replace(/^\//, '')}`;
       const win = await browser.windows.create({
-        url,
+        url:    fullUrl,
         type:   'popup',
-        // Step 1:
-        // Open a small window to suppress annoying large white rect
-        // covering on the window.
-        // Note that too small size (like 16x16) can produce invalid
-        // innerWidth/Height/outerWidth/Height in the content area on Linux.
-        // 100x100 is the secure minimum size defined at
-        // nsGlobalWindowOuter::CheckSecurityWidthAndHeight:
-        // https://searchfox.org/mozilla-central/rev/710d6e1015d03343b067b92e6f1f775a0b1cad6f/dom/base/nsGlobalWindowOuter.cpp#4060
-        width:  100,
-        height: 100,
-        top:    ownerWin.top + Math.floor((ownerWin.height - 100) / 2),
-        left:   ownerWin.left + Math.floor((ownerWin.width - 100) / 2)
+        ...simulatedSize
       });
       // Due to a Firefox's bug we cannot open popup type window
       // at specified position.
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
-      // Thus we move the window immediately after it is opened.
-      browser.windows.update(win.id, {
-        // These coordinates must be positive integer because large negative
-        // coordinates don't work as expected on macOS.
-        top:  window.screen.height * 100,
-        left: window.screen.width * 100
-      });
+      // Thus we need to move the window immediately after it is opened.
+      if (win.left < ownerWin.left ||
+          win.top < ownerWin.top ||
+          win.left + win.width > ownerWin.left + ownerWin.width ||
+          win.top + win.height > ownerWin.top + ownerWin.height) {
+        // But, such a move will produce an annoying flash.
+        // So, I grudgingly accept the position of the dialog placed
+        // by default if the popup is shown inside the owner window.
+        browser.windows.update(win.id, {
+          top:  simulatedSize.top,
+          left: simulatedSize.left
+        });
+      }
       const activeTab = win.tabs.find(tab => tab.active);
 
       const onFocusChanged = !params.modal ? null : windowId => {
@@ -1019,9 +1034,17 @@
           try {
             await new Promise((resolve, _reject) => {
               let timeout;
-              const fullUrl = /^about:/.test(url) || /^\w+:\/\//.test(url) ?
-                url :
-                `moz-extension://${location.host}/${url.replace(/^\//, '')}`
+              const code = `(() => {
+                ${params.title ? 'document.title = ' + JSON.stringify(params.title) +';' : ''}
+                const classList = document.documentElement.classList;
+                classList.add('rich-confirm-${uniqueKey}');
+                classList.add('popup-window');
+                return {
+                  width:  window.outerWidth - window.innerWidth,
+                  height: window.outerHeight - window.innerHeight,
+                  url:    location.href
+                };
+              })();`;
               const onTabUpdated = (tabId, updateInfo, _tab) => {
                 if (updateInfo.status != 'complete' ||
                     !browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -1029,14 +1052,14 @@
                 if (timeout)
                   clearTimeout(timeout);
                 browser.tabs.executeScript(tabId, {
-                  code:            `location.href`,
+                  code,
                   matchAboutBlank: true,
                   runAt:           'document_start'
-                }).then(loadedUrls => {
-                  if (loadedUrls[0] != fullUrl)
+                }).then(results => {
+                  if (results[0].url != fullUrl)
                     return;
                   browser.tabs.onUpdated.removeListener(onTabUpdated);
-                  resolve();
+                  resolve(results[0]);
                 });
               };
               timeout = setTimeout(() => {
@@ -1044,77 +1067,36 @@
                   return;
                 timeout = null;
                 browser.tabs.executeScript(activeTab.id, {
-                  code:            `location.href`,
+                  code,
                   matchAboutBlank: true,
                   runAt:           'document_start'
-                }).then(loadedUrls => {
-                  if (loadedUrls[0] != fullUrl)
+                }).then(results => {
+                  if (results[0].url != fullUrl)
                     return;
                   browser.tabs.onUpdated.removeListener(onTabUpdated);
-                  resolve();
+                  resolve(results[0]);
                 });
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
                 properties: ['status'],
                 tabId:      activeTab.id
               });
-            });
-
-            const frameSize = await browser.tabs.executeScript(activeTab.id, {
-              code:            `(() => {
-                const frameSize = {
-                  width: window.outerWidth - window.innerWidth,
-                  height: window.outerHeight - window.innerHeight
-                };
-                const classList = document.documentElement.classList;
-                classList.add('rich-confirm-${uniqueKey}');
-                classList.add('popup-window');
-                classList.add('calculating-dialog-size');
-                const style = document.body.style;
-                style.setProperty('width', '${ownerWin.width}px', 'important');
-                style.setProperty('height', '${ownerWin.height}px', 'important');
-                return frameSize;
-              })()`,
-              matchAboutBlank: true,
-              runAt:           'document_start'
-            });
-
-            if (params.title) {
-              browser.tabs.executeScript(activeTab.id, {
-                code:            `document.title = ${JSON.stringify(params.title)};`,
-                matchAboutBlank: true,
-                runAt:           'document_start'
+            }).then(frameSize => {
+              const actualWidth  = frameSize.width + simulatedSize.width;
+              const actualHeight = frameSize.height + simulatedSize.height;
+              browser.windows.update(win.id, {
+                width:  actualWidth,
+                height: actualHeight,
+                // We should reposition the dialog at truly center of the
+                // owner window, but it will produce an annoying slip of
+                // the window, so I give up for now.
+                //top:    Math.floor(ownerWin.top + ((ownerWin.height - actualHeight) / 2)),
+                //left:   Math.floor(ownerWin.left + ((ownerWin.width - actualWidth) / 2))
               });
-            }
-
+            });
             return this.showInTab(activeTab.id, {
               ...params,
-              popup: true,
-              async onSizeDetermined(coordinates) {
-                // Final Step:
-                // Shrink the window and move it to the expected position.
-                const safetyFactor = 1.05; // safe guard for scrollbar due to unexpected line breaks
-                const width  = Math.ceil((coordinates.width + frameSize[0].width) * safetyFactor);
-                const height = Math.ceil((coordinates.height + frameSize[0].height));
-                browser.windows.update(win.id, {
-                  width,
-                  height,
-                  top:  Math.floor(ownerWin.top + ((ownerWin.height - height) / 2)),
-                  left: Math.floor(ownerWin.left + ((ownerWin.width - width) / 2))
-                })
-                browser.tabs.executeScript(activeTab.id, {
-                  code:            `{
-                    const style = document.body.style;
-                    style.width = '';
-                    style.height = '';
-                    const classList = document.documentElement.classList;
-                    classList.add('dialog-size-determined');
-                    classList.remove('calculating-dialog-size');
-                  }`,
-                  matchAboutBlank: true,
-                  runAt:           'document_start'
-                });
-              }
+              popup: true
             });
           }
           catch(error) {
