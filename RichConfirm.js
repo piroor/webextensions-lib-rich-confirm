@@ -949,7 +949,7 @@
         ownerWin = await browser.windows.get(winId);
       }
 
-      let simulation = new this({
+      const simulation = new this({
         ...params,
         popup: true,
         simulation: true
