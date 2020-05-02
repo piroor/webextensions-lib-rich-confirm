@@ -583,7 +583,8 @@
         try {
           this.params.onShown(this.content, this.params.inject || {});
         }
-        catch(_error) {
+        catch(error) {
+          console.error(error);
         }
       }
 
