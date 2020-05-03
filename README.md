@@ -43,6 +43,7 @@ And there are more advanced parameters. See also the "Advanced usage" section.
  * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This parameter is exclusive with `message`. (`String`)
  * `onShown` (optional): Event handler when the dialog is shown. (`Function`)
  * `onHidden` (optional): Event handler when the dialog is hidden. (`Function`)
+ * `inject` (optional): Properties given to event handlers executed in a different namespace. (`Object')
 
 `RichConfirm.show()` returns a `Promise`. It will be resolved with an object with following attributes:
 
@@ -113,7 +114,7 @@ var result = await RichConfirm.showInTab(10, {
 The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will appear in the current tab.
 
 
-## Confirmation in a popup
+## Confirmation in a popup window
 
 If you want to show the confirmation dialog as a popup window, call `RichConfirm.showInPopup()` with an ID of an owner window, like:
 
@@ -135,4 +136,17 @@ The `url` parameter is required on ESR68, [otherwise the popup will become blank
 
 ```html
 <!DOCTYPE html>
+```
+
+If you give `onShown` and `onHidden` callbacks you will see that they are called twice per one `RichConfirm.showInPupup()` call. Due to some restrictions (including [the bug 1271047](https://bugzilla.mozilla.org/show_bug.cgi?id=1271047)) we cannot determine the size of the popup before it is actually rendered, so this library tries to render the dialog silently and invisiblly at first, and opens the real popup window with the determined size. If you want some operations in those callbacks are skipped on the first try, you can determine it is in the simulation (first try) or the real (second try), with the existence of the `simulation` class given to the container element, like following:
+
+```javascript
+var result = await RichConfirm.showInPopup(10, {
+  ...
+  onShown(container, injected) {
+    if (container.classList.contains('simulation'))
+      return;
+    // Operations to inizialize the dialog contents should be here.
+  }
+});
 ```
