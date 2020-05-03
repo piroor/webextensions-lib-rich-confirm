@@ -979,6 +979,9 @@
         ownerWin = await browser.windows.get(winId);
       }
 
+      const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
+      const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
+
       const simulation = new this({
         ...params,
         popup: true,
@@ -986,8 +989,8 @@
       });
       simulation.buildUI();
       const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
-      simulatedContainer.style.minWidth = `${ownerWin.width}px`;
-      simulatedContainer.style.minHeight = `${ownerWin.height}px`;
+      simulatedContainer.style.minWidth  = `${minWidth}px`;
+      simulatedContainer.style.minHeight = `${minHeight}px`;
       await new Promise((resolve, _reject) => {
         simulation.show({
           onShown() {
@@ -1120,11 +1123,17 @@
               onReady(dialogSize) {
                 const actualWidth  = Math.min(
                   Math.ceil(dialogSize.width + frameSize.width),
-                  ownerWin.left + ownerWin.width - simulatedSize.left
+                  Math.max(
+                    ownerWin.left + ownerWin.width - simulatedSize.left,
+                    minWidth
+                  )
                 );
                 const actualHeight = Math.min(
                   Math.ceil(dialogSize.height + frameSize.height),
-                  ownerWin.top + ownerWin.height - simulatedSize.top
+                  Math.max(
+                    ownerWin.top + ownerWin.height - simulatedSize.top,
+                    minHeight
+                  )
                 );
                 browser.windows.update(win.id, {
                   width:  actualWidth,
