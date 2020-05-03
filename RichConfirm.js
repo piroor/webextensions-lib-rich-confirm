@@ -1027,10 +1027,10 @@
       // at specified position.
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
       // Thus we need to move the window immediately after it is opened.
-      if (win.left + win.width < ownerWin.left ||
-          win.top + win.height < ownerWin.top ||
-          win.left > ownerWin.left + ownerWin.width ||
-          win.top > ownerWin.top + ownerWin.height) {
+      if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
+          win.top + win.height - (win.height / 2) <= ownerWin.top ||
+          win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
+          win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
         // But, such a move will produce an annoying flash.
         // So, I grudgingly accept the position of the dialog placed
         // if the popup (partially or fully) covers the owner window.
