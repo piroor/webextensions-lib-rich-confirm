@@ -319,9 +319,13 @@
         ${common}.rich-confirm-dialog {
           color: var(--text-color);
           font: message-box;
-          overflow: auto;
+          overflow: hidden;
           padding: 1em;
           z-index: 999999;
+        }
+        /* Don't apply "auto" immediately because it can produce needless scrollbar even if all contents are visible without scrolling. */
+        ${common}.rich-confirm.shown .rich-confirm-dialog {
+          overflow: auto;
         }
         ${common}.rich-confirm-dialog:not(.popup-window) {
           background: var(--bg-color);
@@ -581,7 +585,7 @@
 
       if (typeof this.params.onShown == 'function') {
         try {
-          this.params.onShown(this.content, this.params.inject || {});
+          await this.params.onShown(this.content, this.params.inject || {});
         }
         catch(error) {
           console.error(error);
@@ -591,7 +595,12 @@
       this.ui.classList.add('show');
 
       if (typeof onShown == 'function')
-        onShown(this.content, this.params.inject || {});
+        await onShown(this.content, this.params.inject || {});
+
+      setTimeout(() => {
+        // Apply overflow:auto after all contents are correctly rendered.
+        this.ui.classList.add('shown');
+      }, 10);
 
       return new Promise((resolve, reject) => {
         this._resolve = resolve;
