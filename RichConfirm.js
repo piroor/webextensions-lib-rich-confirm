@@ -335,6 +335,10 @@
           max-width: 90%;
         }
 
+        ${common}.rich-confirm-content {
+          white-space: pre-wrap;
+        }
+
         ${common}.rich-confirm-buttons {
           align-items: center;
           display: flex;
