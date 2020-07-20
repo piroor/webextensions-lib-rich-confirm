@@ -327,7 +327,7 @@
         ${common}.rich-confirm.shown .rich-confirm-dialog {
           overflow: auto;
         }
-        ${common}.rich-confirm.shown .rich-confirm-dialog:not(.simulation) {
+        ${common}.rich-confirm.shown .rich-confirm-dialog.popup-window:not(.simulation) {
           display: flex;
           flex-direction: column;
           flex-grow: 1;
@@ -343,7 +343,7 @@
         ${common}.rich-confirm-content {
           white-space: pre-wrap;
         }
-        ${common}.rich-confirm-content:not(.simulation) {
+        ${common}.rich-confirm-content.popup-window:not(.simulation) {
           display: flex;
           flex-direction: column;
           flex-grow: 1;
