@@ -327,6 +327,11 @@
         ${common}.rich-confirm.shown .rich-confirm-dialog {
           overflow: auto;
         }
+        ${common}.rich-confirm.shown .rich-confirm-dialog:not(.simulation) {
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+        }
         ${common}.rich-confirm-dialog:not(.popup-window) {
           background: var(--bg-color);
           box-shadow: 0.1em 0.1em 0.5em rgba(0, 0, 0, 0.65);
@@ -337,6 +342,12 @@
 
         ${common}.rich-confirm-content {
           white-space: pre-wrap;
+        }
+        ${common}.rich-confirm-content:not(.simulation) {
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+          flex-shrink: 1;
         }
 
         ${common}.rich-confirm-buttons {
