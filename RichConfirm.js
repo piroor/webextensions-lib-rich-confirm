@@ -357,6 +357,11 @@
           margin: 0.5em 0 0;
         }
 
+        ${common}.rich-confirm-buttons.type-dialog button,
+        ${common}.rich-confirm-buttons.type-common-dialog button {
+          white-space: nowrap;
+        }
+
         ${common}.rich-confirm-buttons.type-dialog {
           justify-content: flex-end;
         }
