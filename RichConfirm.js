@@ -957,11 +957,16 @@
           ) ? value.toString() : JSON.stringify(value);
           injectTransferable.push(`${JSON.stringify(key)} : ${transferable}`);
         }
-        const originalOnShown = typeof params.onShown == 'function' ?
-          params.onShown.toString()
-            .replace(/^(async\s+)?function/, '$1')
-            .replace(/^(async\s+)?/, '$1 function ') :
-          '() => {}';
+        const stringifyOnShown = onShown => {
+          if (Array.isArray(onShown))
+            return `[${onShown.map(stringifyOnShown).join(',')}]`;
+          return typeof onShown == 'function' ?
+            onShown.toString()
+              .replace(/^(async\s+)?function/, '$1')
+              .replace(/^(async\s+)?/, '$1 function ') :
+            '() => {}';
+        };
+        const originalOnShown = stringifyOnShown(params.onShown);
         delete transferableParams.onShown;
         browser.tabs.executeScript(tabId, {
           code: `
@@ -972,12 +977,16 @@
                 ...params,
                 inject,
                 onShown(content, inject) {
-                  try {
-                    if (typeof originalOnShown == 'function')
-                      originalOnShown(content, inject);
-                  }
-                  catch(error) {
-                    console.error(error);
+                  if (!Array.isArray(originalOnShown))
+                    originalOnShown = [originalOnShown];
+                  for (const originalOnShownPart of originalOnShown) {
+                    try {
+                      if (typeof originalOnShownPart == 'function')
+                        await originalOnShownPart(content, inject);
+                    }
+                    catch(error) {
+                      console.error(error);
+                    }
                   }
                 }
               });
