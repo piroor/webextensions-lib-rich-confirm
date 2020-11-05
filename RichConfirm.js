@@ -611,11 +611,42 @@
           console.error(error);
         }
       }
+      else if (Array.isArray(this.params.onShown)) {
+        for (const onShownPart of this.params.onShown) {
+          if (typeof onShownPart != 'function')
+            continue;
+          try {
+            await onShownPart(this.content, this.params.inject || {});
+          }
+          catch(error) {
+            console.error(error);
+          }
+        }
+      }
+
 
       this.ui.classList.add('show');
 
-      if (typeof onShown == 'function')
-        await onShown(this.content, this.params.inject || {});
+      if (typeof onShown == 'function') {
+        try {
+          await onShown(this.content, this.params.inject || {});
+        }
+        catch(error) {
+          console.error(error);
+        }
+      }
+      else if (Array.isArray(onShown)) {
+        for (const onShownPart of onShown) {
+          if (typeof onShownPart != 'function')
+            continue;
+          try {
+            await onShownPart(this.content, this.params.inject || {});
+          }
+          catch(error) {
+            console.error(error);
+          }
+        }
+      }
 
       setTimeout(() => {
         // Apply overflow:auto after all contents are correctly rendered.
