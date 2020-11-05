@@ -962,8 +962,9 @@
             return `[${onShown.map(stringifyOnShown).join(',')}]`;
           return typeof onShown == 'function' ?
             onShown.toString()
-              .replace(/^(async\s+)?function/, '$1')
-              .replace(/^(async\s+)?/, '$1 function ') :
+              .replace(/^\s*(async\s+)?function/, '$1')
+              .replace(/^\s*(async\s+)?/, '$1 function ')
+              .replace(/^\s*(async\s+)?function ([^=]+=>\s*\{)/, '$1 $2') :
             '() => {}';
         };
         const originalOnShown = stringifyOnShown(params.onShown);
