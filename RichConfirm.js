@@ -976,7 +976,7 @@
               const confirm = new RichConfirm({
                 ...params,
                 inject,
-                onShown(content, inject) {
+                async onShown(content, inject) {
                   if (!Array.isArray(originalOnShown))
                     originalOnShown = [originalOnShown];
                   for (const originalOnShownPart of originalOnShown) {
