@@ -357,6 +357,7 @@
           margin: 0.5em 0 0;
         }
 
+        @media (min-width: 40em) {
         ${common}.rich-confirm-buttons.type-dialog button,
         ${common}.rich-confirm-buttons.type-common-dialog button {
           white-space: nowrap;
@@ -389,10 +390,17 @@
         ${common}.rich-confirm-buttons.type-common-dialog.linux button + button {
           margin-right: 1em;
         }
+        }
 
         ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) {
           align-items: stretch;
           flex-direction: column;
+        }
+        @media (max-width: 40em) {
+          ${common}.rich-confirm-buttons:not(.type-dialog).type-common-dialog {
+            align-items: stretch;
+            flex-direction: column;
+          }
         }
 
         ${common}.rich-confirm button {
@@ -406,6 +414,14 @@
           margin-bottom: 0.2em;
           padding: 0.4em;
           width: 100%;
+        }
+        @media (max-width: 40em) {
+          ${common}.rich-confirm-buttons:not(.type-dialog).type-common-dialog button {
+            display: block;
+            margin-bottom: 0.2em;
+            padding: 0.4em;
+            width: 100%;
+          }
         }
 
         ${common}.rich-confirm-check-label {
