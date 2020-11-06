@@ -358,38 +358,38 @@
         }
 
         @media (min-width: 40em) {
-        ${common}.rich-confirm-buttons.type-dialog button,
-        ${common}.rich-confirm-buttons.type-common-dialog button {
-          white-space: nowrap;
-        }
+          ${common}.rich-confirm-buttons.type-dialog button,
+          ${common}.rich-confirm-buttons.type-common-dialog button {
+            white-space: nowrap;
+          }
 
-        ${common}.rich-confirm-buttons.type-dialog {
-          justify-content: flex-end;
-        }
-        ${common}.rich-confirm-buttons.type-dialog button + button {
-          margin-left: 1em;
-        }
+          ${common}.rich-confirm-buttons.type-dialog {
+            justify-content: flex-end;
+          }
+          ${common}.rich-confirm-buttons.type-dialog button + button {
+            margin-left: 1em;
+          }
 
-        ${common}.rich-confirm-buttons.type-common-dialog {
-          justify-content: center;
-        }
-        ${common}.rich-confirm-buttons.type-common-dialog button + button {
-          margin-left: 1em;
-        }
+          ${common}.rich-confirm-buttons.type-common-dialog {
+            justify-content: center;
+          }
+          ${common}.rich-confirm-buttons.type-common-dialog button + button {
+            margin-left: 1em;
+          }
 
-        ${common}.rich-confirm-buttons.type-dialog.mac,
-        ${common}.rich-confirm-buttons.type-dialog.linux,
-        ${common}.rich-confirm-buttons.type-common-dialog.mac,
-        ${common}.rich-confirm-buttons.type-common-dialog.linux {
-          justify-content: flex-start;
-          flex-direction: row-reverse;
-        }
-        ${common}.rich-confirm-buttons.type-dialog.mac button + button,
-        ${common}.rich-confirm-buttons.type-dialog.linux button + button,
-        ${common}.rich-confirm-buttons.type-common-dialog.mac button + button,
-        ${common}.rich-confirm-buttons.type-common-dialog.linux button + button {
-          margin-right: 1em;
-        }
+          ${common}.rich-confirm-buttons.type-dialog.mac,
+          ${common}.rich-confirm-buttons.type-dialog.linux,
+          ${common}.rich-confirm-buttons.type-common-dialog.mac,
+          ${common}.rich-confirm-buttons.type-common-dialog.linux {
+            justify-content: flex-start;
+            flex-direction: row-reverse;
+          }
+          ${common}.rich-confirm-buttons.type-dialog.mac button + button,
+          ${common}.rich-confirm-buttons.type-dialog.linux button + button,
+          ${common}.rich-confirm-buttons.type-common-dialog.mac button + button,
+          ${common}.rich-confirm-buttons.type-common-dialog.linux button + button {
+            margin-right: 1em;
+          }
         }
 
         ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) {
