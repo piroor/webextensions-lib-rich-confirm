@@ -392,12 +392,43 @@
           }
         }
 
+        /* popup type dialog always have horizontal buttons */
+        ${common}.rich-confirm-buttons.popup-window.type-dialog button,
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog button {
+          white-space: nowrap;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-dialog {
+          justify-content: flex-end;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-dialog button + button {
+          margin-left: 1em;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog {
+          justify-content: center;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog button + button {
+          margin-left: 1em;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-dialog.mac,
+        ${common}.rich-confirm-buttons.popup-window.type-dialog.linux,
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog.mac,
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog.linux {
+          justify-content: flex-start;
+          flex-direction: row-reverse;
+        }
+        ${common}.rich-confirm-buttons.popup-window.type-dialog.mac button + button,
+        ${common}.rich-confirm-buttons.popup-window.type-dialog.linux button + button,
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog.mac button + button,
+        ${common}.rich-confirm-buttons.popup-window.type-common-dialog.linux button + button {
+          margin-right: 1em;
+        }
+
         ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) {
           align-items: stretch;
           flex-direction: column;
         }
         @media (max-width: 40em) {
-          ${common}.rich-confirm-buttons:not(.type-dialog).type-common-dialog {
+          ${common}.rich-confirm-buttons:not(.popup-window):not(.type-dialog).type-common-dialog {
             align-items: stretch;
             flex-direction: column;
           }
@@ -416,7 +447,7 @@
           width: 100%;
         }
         @media (max-width: 40em) {
-          ${common}.rich-confirm-buttons:not(.type-dialog).type-common-dialog button {
+          ${common}.rich-confirm-buttons:not(.popup-window):not(.type-dialog).type-common-dialog button {
             display: block;
             margin-bottom: 0.2em;
             padding: 0.4em;
