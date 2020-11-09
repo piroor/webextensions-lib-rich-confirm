@@ -980,7 +980,7 @@
             onShown.toString()
               .replace(/^\s*(async\s+)?function/, '$1')
               .replace(/^\s*(async\s+)?/, '$1 function ')
-              .replace(/^\s*(async\s+)?function ([^=]+=>\s*\{)/, '$1 $2') :
+              .replace(/^\s*(async\s+)?function ((?:\([^=\)]*\)|[^\(\)=]+)\s*=>\s*\{)/, '$1 $2') :
             '() => {}';
         };
         const originalOnShown = stringifyOnShown(params.onShown);
