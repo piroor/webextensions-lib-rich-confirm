@@ -515,7 +515,7 @@
       `);
       range.insertNode(fragment);
       range.detach();
-      this.ui = document.querySelector(`.rich-confirm.${commonClass}`);
+      this.ui = document.querySelector(`.rich-confirm.${this.commonClass}`);
     }
 
     getNextFocusedNodeByAccesskey(key) {
