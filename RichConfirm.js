@@ -501,7 +501,7 @@
       const fragment = range.createContextualFragment(`
         <div class="rich-confirm ${commonClass}">
           <div class="rich-confirm-row ${commonClass}">
-            <div class="rich-confirm-dialog ${commonClass}">
+            <div class="rich-confirm-dialog ${commonClass}" role="dialog">
               <div class="rich-confirm-content ${commonClass}"></div>
               <label class="rich-confirm-check-label ${commonClass}">
                 <input type="checkbox"
@@ -515,7 +515,7 @@
       `);
       range.insertNode(fragment);
       range.detach();
-      this.ui = document.body.lastElementChild;
+      this.ui = document.querySelector(`.rich-confirm.${commonClass}`);
     }
 
     getNextFocusedNodeByAccesskey(key) {
@@ -671,7 +671,7 @@
         }
       }
 
-
+      this.ui.querySelector('.rich-confirm-dialog').setAttribute('aria-modal', !!this.params.modal);
       this.ui.classList.add('show');
 
       if (typeof onShown == 'function') {
