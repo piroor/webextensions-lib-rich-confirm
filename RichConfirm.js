@@ -735,11 +735,12 @@
     }
 
     dismiss() {
-      this._resolve({
+      const resolve = this._resolve;
+      const result = {
         buttonIndex: -1,
         checked: !!this.params.checkMessage && this.checkCheckbox.checked
-      });
-      return this.hide();
+      };
+      return this.hide().then(() => resolve(result));
     }
 
     onClick(event) {
@@ -780,12 +781,13 @@
           }
           values[field.id || field.name] = value;
         }
-        this._resolve({
+        const resolve = this._resolve;
+        const result = {
           buttonIndex,
           values,
           checked: !!this.params.checkMessage && this.checkCheckbox.checked
-        });
-        this.hide();
+        };
+        this.hide().then(() => resolve(result));
         return;
       }
 
