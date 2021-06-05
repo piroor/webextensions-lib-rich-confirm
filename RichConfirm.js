@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018-2020 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2021 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
@@ -498,8 +498,9 @@
             /linux/i.test(navigator.platform) ? 'linux' :
               ''
       ].join(' ');
+      const uniqueId = `created-at-${Date.now()}-${Math.floor(Math.random() * Math.pow(2, 24))}`;
       const fragment = range.createContextualFragment(`
-        <div class="rich-confirm ${commonClass}">
+        <div class="rich-confirm ${commonClass} ${uniqueId}">
           <div class="rich-confirm-row ${commonClass}">
             <div class="rich-confirm-dialog ${commonClass}" role="dialog">
               <div class="rich-confirm-content ${commonClass}"></div>
@@ -515,7 +516,7 @@
       `);
       range.insertNode(fragment);
       range.detach();
-      this.ui = document.querySelector(`.rich-confirm.${this.commonClass}`);
+      this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${uniqueId}`);
     }
 
     getNextFocusedNodeByAccesskey(key) {
@@ -723,12 +724,15 @@
       window.removeEventListener('beforeunload', this.onUnload);
       delete this._resolve;
       delete this._rejecte;
+      const ui = this.ui;
+      const style = this.style;
+      delete this.ui;
+      delete this.style;
       return new Promise((resolve, _reject) => {
         window.setTimeout(() => {
-          this.ui.parentNode.removeChild(this.ui);
-          this.style.parentNode.removeChild(this.style);
-          delete this.ui;
-          delete this.style;
+          // remove elements after animation is finished
+          ui.parentNode.removeChild(ui);
+          style.parentNode.removeChild(style);
           resolve();
         }, 1000);
       });
