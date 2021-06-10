@@ -1,6 +1,6 @@
 # webextensions-lib-rich-confirm
 
-[![Build Status](https://travis-ci.org/piroor/webextensions-lib-rich-confirm.svg?branch=trunk)](https://travis-ci.org/piroor/webextensions-lib-rich-confirm)
+![Build Status](https://github.com/piroor/webextensions-lib-rich-confirm/actions/workflows/main.yml/badge.svg?branch=trunk)
 
 Helps to provide confirmation dialog with checkbox.
 
