@@ -1240,7 +1240,8 @@
               });
             });
 
-            await browser.tabs.setZoom(activeTab.id, 1);
+            if (typeof browser.tabs.setZoom == 'function')
+              await browser.tabs.setZoom(activeTab.id, 1);
             return this.showInTab(activeTab.id, {
               ...params,
               popup: true,
