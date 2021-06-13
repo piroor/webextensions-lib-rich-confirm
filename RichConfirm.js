@@ -733,8 +733,8 @@
           // remove elements after animation is finished
           ui.parentNode.removeChild(ui);
           style.parentNode.removeChild(style);
-          resolve();
         }, 1000);
+        resolve();
       });
     }
 
