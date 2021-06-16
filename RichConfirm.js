@@ -697,6 +697,9 @@
       }
 
       setTimeout(() => {
+        if (!this.ui ||
+            !this.ui.classList)
+          return;
         // Apply overflow:auto after all contents are correctly rendered.
         this.ui.classList.add('shown');
       }, 10);
