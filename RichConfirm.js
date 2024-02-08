@@ -1035,9 +1035,8 @@
 
         const run = async function run(uniqueKey, originalOnShown, transferableParams, inject) {
           delete window.RichConfirm.result;
-          const params = transferableParams;
           const confirm = new RichConfirm({
-            ...params,
+            ...transferableParams,
             inject: inject || {},
             async onShown(content, inject) {
               if (!Array.isArray(originalOnShown))
