@@ -1415,14 +1415,15 @@
         };
         (browser.scripting ?
           browser.scripting.executeScript({ // Manifest V3
-            target: { tabId },
+            target: { tabId: activeTab.id },
             func:   reloadWithBlank,
           }) :
-          browser.tabs.executeScript(tabId, {
+          browser.tabs.executeScript(activeTab.id, {
             code: `(${reloadWithBlank.toString()})();`,
             matchAboutBlank: true,
             runAt:           'document_start'
-          })).then(() => {
+          }))
+          .then(() => {
             browser.windows.remove(win.id);
           });
       }
