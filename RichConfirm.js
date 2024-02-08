@@ -1315,8 +1315,8 @@
                 else
                   browser.tabs.executeScript(tabId, {
                     code: `(${getFrameSize.toString()})(
-                      JSON.stringify(params.title),
-                      JSON.stringify(uniqueKey)
+                      ${JSON.stringify(params.title)},
+                      ${JSON.stringify(uniqueKey)}
                     );`,
                     matchAboutBlank: true,
                     runAt:           'document_start'
@@ -1346,8 +1346,8 @@
                 else
                   browser.tabs.executeScript(activeTab.id, {
                     code: `(${getFrameSize.toString()})(
-                      JSON.stringify(params.title),
-                      JSON.stringify(uniqueKey)
+                      ${JSON.stringify(params.title)},
+                      ${JSON.stringify(uniqueKey)}
                     );`,
                     matchAboutBlank: true,
                     runAt:           'document_start'
