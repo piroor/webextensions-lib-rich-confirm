@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018-2021 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2024 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
@@ -992,14 +992,21 @@
         browser.runtime.onMessage.addListener(onMessage);
       });
       try {
-        await browser.tabs.executeScript(tabId, {
-          code: `
-            if (!window.RichConfirm)
-               (${defineRichConfirm.toString()})(${this.uniqueKey});
-          `,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        });
+        if (browser.scripting) // Manifest V3
+          await browser.scripting.executeScript({
+            target: { tabId },
+            func: defineRichConfirm,
+            args: [this.uniqueKey],
+          });
+        else
+          await browser.tabs.executeScript(tabId, {
+            code: `
+              if (!window.RichConfirm)
+                 (${defineRichConfirm.toString()})(${this.uniqueKey});
+            `,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          });
         const transferableParams = { ...params };
         const injectTransferable = [];
         const inject = params.inject || {};
@@ -1025,58 +1032,69 @@
         };
         const originalOnShown = stringifyOnShown(params.onShown);
         delete transferableParams.onShown;
-        browser.tabs.executeScript(tabId, {
-          code: `
-            delete window.RichConfirm.result;
-            (async (originalOnShown, inject) => {
-              const params = ${JSON.stringify(transferableParams)};
-              const confirm = new RichConfirm({
-                ...params,
-                inject,
-                async onShown(content, inject) {
-                  if (!Array.isArray(originalOnShown))
-                    originalOnShown = [originalOnShown];
-                  for (const originalOnShownPart of originalOnShown) {
-                    try {
-                      if (typeof originalOnShownPart == 'function')
-                        await originalOnShownPart(content, inject);
-                    }
-                    catch(error) {
-                      console.error(error);
-                    }
-                  }
+
+        const run = async function run(uniqueKey, originalOnShown, transferableParams, inject) {
+          delete window.RichConfirm.result;
+          const params = transferableParams;
+          const confirm = new RichConfirm({
+            ...params,
+            inject: inject || {},
+            async onShown(content, inject) {
+              if (!Array.isArray(originalOnShown))
+                originalOnShown = [originalOnShown];
+              for (const originalOnShownPart of originalOnShown) {
+                try {
+                  if (typeof originalOnShownPart == 'function')
+                    await originalOnShownPart(content, inject);
                 }
-              });
-              const result = await confirm.show({
-                onShown(content, _injected) {
-                  const dialog = content.parentNode;
-                  const rect   = dialog.getBoundingClientRect();
-                  const style  = window.getComputedStyle(dialog, null);
-                  // End padding is not included in the scrillable size,
-                  // so we manually add them.
-                  const rightPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-right')) || 0;
-                  const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
-                  browser.runtime.sendMessage({
-                    type:         'rich-confirm-dialog-shown',
-                    uniqueKey:    ${JSON.stringify(this.uniqueKey)},
-                    dialogWidth:  rect.width + dialog.scrollLeftMax + rightPadding,
-                    dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
-                  });
+                catch(error) {
+                  console.error(error);
                 }
-              });
+              }
+            }
+          });
+          const result = await confirm.show({
+            onShown(content, _injected) {
+              const dialog = content.parentNode;
+              const rect   = dialog.getBoundingClientRect();
+              const style  = window.getComputedStyle(dialog, null);
+              // End padding is not included in the scrillable size,
+              // so we manually add them.
+              const rightPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-right')) || 0;
+              const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
               browser.runtime.sendMessage({
-                type:      'rich-confirm-dialog-complete',
-                uniqueKey: ${JSON.stringify(this.uniqueKey)},
-                result
+                type:         'rich-confirm-dialog-shown',
+                uniqueKey:    uniqueKey,
+                dialogWidth:  rect.width + dialog.scrollLeftMax + rightPadding,
+                dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
               });
-            })(
-              (${originalOnShown}),
-              {${injectTransferable.join(',')}}
-            );
-          `,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        });
+            }
+          });
+          browser.runtime.sendMessage({
+            type:      'rich-confirm-dialog-complete',
+            uniqueKey: uniqueKey,
+            result
+          });
+        };
+        if (browser.scripting) // Manifest V3
+          browser.scripting.executeScript({
+            target: { tabId },
+            func: run,
+            args: [this.uniqueKey, originalOnShown, transferableParams, inject],
+          });
+        else
+          browser.tabs.executeScript(tabId, {
+            code: `
+              (${run.toString()})(
+                ${this.uniqueKey},
+                (${originalOnShown.toString()}),
+                ${JSON.stringify(transferableParams)},
+                {${injectTransferable.join(',')}}
+              );
+            `,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          });
         // Don't return the promise directly here, instead await it
         // because the "finally" block must be processed after
         // the promise is resolved.
@@ -1264,48 +1282,81 @@
           try {
             const frameSize = await new Promise((resolve, _reject) => {
               let timeout;
-              const code = `(() => {
-                ${params.title ? 'document.title = ' + JSON.stringify(params.title) +';' : ''}
+              const getFrameSize = function getFrameSize(title, uniqueKey) {
+                if (title)
+                  document.title = title;
                 const classList = document.documentElement.classList;
-                classList.add('rich-confirm-${uniqueKey}');
+                classList.add(`rich-confirm-${uniqueKey}`);
                 classList.add('popup-window');
                 return {
                   width:  window.outerWidth - window.innerWidth,
                   height: window.outerHeight - window.innerHeight,
                   url:    location.href
                 };
-              })();`;
+              };
               const onTabUpdated = (tabId, updateInfo, _tab) => {
                 if (updateInfo.status != 'complete' ||
                     !browser.tabs.onUpdated.hasListener(onTabUpdated))
                   return;
                 if (timeout)
                   clearTimeout(timeout);
-                browser.tabs.executeScript(tabId, {
-                  code,
-                  matchAboutBlank: true,
-                  runAt:           'document_start'
-                }).then(results => {
-                  if (results[0].url != fullUrl)
-                    return;
-                  browser.tabs.onUpdated.removeListener(onTabUpdated);
-                  resolve(results[0]);
-                });
+                if (browser.scripting)
+                  browser.scripting.executeScript({ // Manifest V3
+                    target: { tabId },
+                    func:   getFrameSize,
+                    args:   [params.title, uniqueKey],
+                  }).then(injectionResults => {
+                    const result = injectionResults[0].result;
+                    if (result.url != fullUrl)
+                      return;
+                    browser.tabs.onUpdated.removeListener(onTabUpdated);
+                    resolve(result);
+                  });
+                else
+                  browser.tabs.executeScript(tabId, {
+                    code: `(${getFrameSize.toString()})(
+                      JSON.stringify(params.title),
+                      JSON.stringify(uniqueKey)
+                    );`,
+                    matchAboutBlank: true,
+                    runAt:           'document_start'
+                  }).then(results => {
+                    if (results[0].url != fullUrl)
+                      return;
+                    browser.tabs.onUpdated.removeListener(onTabUpdated);
+                    resolve(results[0]);
+                  });
               };
               timeout = setTimeout(() => {
                 if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
                   return;
                 timeout = null;
-                browser.tabs.executeScript(activeTab.id, {
-                  code,
-                  matchAboutBlank: true,
-                  runAt:           'document_start'
-                }).then(results => {
-                  if (results[0].url != fullUrl)
-                    return;
-                  browser.tabs.onUpdated.removeListener(onTabUpdated);
-                  resolve(results[0]);
-                });
+                if (browser.scripting)
+                  browser.scripting.executeScript({ // Manifest V3
+                    target: { tabId: activeTab.id },
+                    func:   getFrameSize,
+                    args:   [params.title, uniqueKey],
+                  }).then(injectionResult => {
+                    const result = injectionResult.result[0];
+                    if (result.url != fullUrl)
+                      return;
+                    browser.tabs.onUpdated.removeListener(onTabUpdated);
+                    resolve(result);
+                  });
+                else
+                  browser.tabs.executeScript(activeTab.id, {
+                    code: `(${getFrameSize.toString()})(
+                      JSON.stringify(params.title),
+                      JSON.stringify(uniqueKey)
+                    );`,
+                    matchAboutBlank: true,
+                    runAt:           'document_start'
+                  }).then(results => {
+                    if (results[0].url != fullUrl)
+                      return;
+                    browser.tabs.onUpdated.removeListener(onTabUpdated);
+                    resolve(results[0]);
+                  });
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
                 properties: ['status'],
@@ -1359,13 +1410,21 @@
       if (!win.closed) {
         // A window closed with a blank page won't appear
         // in the "Recently Closed Windows" list.
-        browser.tabs.executeScript(activeTab.id, {
-          code:            `location.replace('about:blank')`,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        }).then(() => {
-          browser.windows.remove(win.id);
-        });
+        const reloadWithBlank = function reloadWithBlank() {
+          location.replace('about:blank');
+        };
+        (browser.scripting ?
+          browser.scripting.executeScript({ // Manifest V3
+            target: { tabId },
+            func:   reloadWithBlank,
+          }) :
+          browser.tabs.executeScript(tabId, {
+            code: `(${reloadWithBlank.toString()})();`,
+            matchAboutBlank: true,
+            runAt:           'document_start'
+          })).then(() => {
+            browser.windows.remove(win.id);
+          });
       }
 
       return result;
