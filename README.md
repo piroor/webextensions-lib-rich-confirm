@@ -138,6 +138,8 @@ The `url` parameter is required on ESR68, [otherwise the popup will become blank
 <!DOCTYPE html>
 ```
 
+*Please note that this is due to restrictions on exect version ESR68. It is recommended to not specify such a custom blank page if you don't need to support old versions of Firefox including ESR68.* Firefox 116 and later restores last closed window with Ctrl-Shift-T so this kind of dialogs may be restored unexpectedly if you specify custom blank page. No `url` option won't cause such unexpectedly restored dialogs.
+
 If you give `onShown` and `onHidden` callbacks you will see that they are called twice per one `RichConfirm.showInPupup()` call. Due to some restrictions (including [the bug 1271047](https://bugzilla.mozilla.org/show_bug.cgi?id=1271047)) we cannot determine the size of the popup before it is actually rendered, so this library tries to render the dialog silently and invisiblly at first, and opens the real popup window with the determined size. If you want some operations in those callbacks are skipped on the first try, you can determine it is in the simulation (first try) or the real (second try), with the existence of the `simulation` class given to the container element, like following:
 
 ```javascript
