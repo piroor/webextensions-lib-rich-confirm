@@ -1216,7 +1216,11 @@
       while (!win) {
         await Promise.race([
           new Promise(async (resolve, _reject) => {
+            if (win)
+              return resolve();
             const windows = await browser.windows.getAll({ populate: true });
+            if (win)
+              return resolve();
             for (const window of windows) {
               if (existingWindowIds.has(window.id) ||
                   !window.tabs[0].url.includes(uniqueKeyParam))
