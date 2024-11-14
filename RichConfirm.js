@@ -863,7 +863,9 @@
           break;
 
         case 'Enter':
-          if (onContent && !target.closest('textarea')) {
+          if (onContent &&
+              !target.closest('textarea') &&
+              !target.closest('[data-no-accept-by-enter="true"]')) {
             event.stopPropagation();
             event.preventDefault();
             this.buttonsContainer.firstChild.click();
