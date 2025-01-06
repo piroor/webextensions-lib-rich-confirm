@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018-2024 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2025 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
