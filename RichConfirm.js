@@ -43,6 +43,22 @@
       return Array.from(this.ui.querySelectorAll('input:not([type="hidden"]), textarea, select, button, *[tabindex]:not([tabindex^="-"])')).filter(node => node.offsetWidth > 0);
     }
 
+    RTL_LANGUAGES = new Set([
+      'ar',
+      'he',
+      'fa',
+      'ur',
+    ]);
+    get isRTL() {
+      const lang = (
+        navigator.language ||
+        navigator.userLanguage ||
+        //(new Intl.DateTimeFormat()).resolvedOptions().locale ||
+        ''
+      ).split('-')[0];
+      return this.RTL_LANGUAGES.has(lang);
+    }
+
     buildUI() {
       if (this.ui)
         return;
@@ -164,6 +180,10 @@
 
           --bg-color: var(--grey-10);
           --text-color: var(--grey-90);
+        }
+
+        ${common}.rich-confirm.rtl {
+          direction: rtl;
         }
 
         ${common}.rich-confirm :link {
@@ -367,14 +387,14 @@
             justify-content: flex-end;
           }
           ${common}.rich-confirm-buttons.type-dialog button + button {
-            margin-left: 1em;
+            margin-inline-start: 1em;
           }
 
           ${common}.rich-confirm-buttons.type-common-dialog {
             justify-content: center;
           }
           ${common}.rich-confirm-buttons.type-common-dialog button + button {
-            margin-left: 1em;
+            margin-inline-start: 1em;
           }
 
           ${common}.rich-confirm-buttons.type-dialog.mac,
@@ -388,7 +408,7 @@
           ${common}.rich-confirm-buttons.type-dialog.linux button + button,
           ${common}.rich-confirm-buttons.type-common-dialog.mac button + button,
           ${common}.rich-confirm-buttons.type-common-dialog.linux button + button {
-            margin-right: 1em;
+            margin-inline-end: 1em;
           }
         }
 
@@ -401,13 +421,13 @@
           justify-content: flex-end;
         }
         ${common}.rich-confirm-buttons.popup-window.type-dialog button + button {
-          margin-left: 1em;
+          margin-inline-start: 1em;
         }
         ${common}.rich-confirm-buttons.popup-window.type-common-dialog {
           justify-content: center;
         }
         ${common}.rich-confirm-buttons.popup-window.type-common-dialog button + button {
-          margin-left: 1em;
+          margin-inline-start: 1em;
         }
         ${common}.rich-confirm-buttons.popup-window.type-dialog.mac,
         ${common}.rich-confirm-buttons.popup-window.type-dialog.linux,
@@ -420,7 +440,7 @@
         ${common}.rich-confirm-buttons.popup-window.type-dialog.linux button + button,
         ${common}.rich-confirm-buttons.popup-window.type-common-dialog.mac button + button,
         ${common}.rich-confirm-buttons.popup-window.type-common-dialog.linux button + button {
-          margin-right: 1em;
+          margin-inline-end: 1em;
         }
 
         ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) {
@@ -496,7 +516,8 @@
         /win/i.test(navigator.platform) ? 'windows' :
           /mac/i.test(navigator.platform) ? 'mac' :
             /linux/i.test(navigator.platform) ? 'linux' :
-              ''
+              '',
+        this.isRTL ? 'rtl' : '',
       ].join(' ');
       const uniqueId = `created-at-${Date.now()}-${Math.floor(Math.random() * Math.pow(2, 24))}`;
       const fragment = range.createContextualFragment(`
@@ -814,7 +835,6 @@
 
       switch (event.key) {
         case 'ArrowUp':
-        case 'ArrowLeft':
         case 'PageUp':
           if (onContent)
             break;
@@ -823,14 +843,29 @@
           this.advanceFocus(-1);
           break;
 
+        case 'ArrowLeft':
+          if (onContent)
+            break;
+          event.stopPropagation();
+          event.preventDefault();
+          this.advanceFocus(this.isRTL ? 1 : -1);
+          break;
+
         case 'ArrowDown':
-        case 'ArrowRight':
         case 'PageDown':
           if (onContent)
             break;
           event.stopPropagation();
           event.preventDefault();
           this.advanceFocus(1);
+          break;
+
+        case 'ArrowRight':
+          if (onContent)
+            break;
+          event.stopPropagation();
+          event.preventDefault();
+          this.advanceFocus(this.isRTL ? -1 : 1);
           break;
 
         case 'Home':
@@ -1061,12 +1096,12 @@
               const style  = window.getComputedStyle(dialog, null);
               // End padding is not included in the scrillable size,
               // so we manually add them.
-              const rightPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-right')) || 0;
+              const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
               const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
               browser.runtime.sendMessage({
                 type:         'rich-confirm-dialog-shown',
                 uniqueKey:    uniqueKey,
-                dialogWidth:  rect.width + dialog.scrollLeftMax + rightPadding,
+                dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
                 dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
               });
             }
