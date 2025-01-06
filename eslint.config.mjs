@@ -1,4 +1,5 @@
 import globals from "globals";
+import babelParser from "@babel/eslint-parser";
 
 export default [{
     ignores: ["!**/.eslintrc.js", "eslint.config.mjs"],
