@@ -1161,7 +1161,12 @@
         ownerWin = await browser.windows.getLastFocused({});
       }
       else {
-        ownerWin = await browser.windows.get(winId);
+        try {
+          ownerWin = await browser.windows.get(winId).catch(_error => null);
+        }
+        catch(_error) {
+          ownerWin = await browser.windows.getLastFocused({});
+        }
       }
 
       const type = this.DIALOG_READY_NOTIFICATION_TYPE;
