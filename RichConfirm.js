@@ -1165,6 +1165,8 @@
           ownerWin = await browser.windows.get(winId).catch(_error => null);
         }
         catch(_error) {
+        }
+        if (!ownerWin) {
           ownerWin = await browser.windows.getLastFocused({});
         }
       }
