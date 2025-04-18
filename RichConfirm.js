@@ -1354,16 +1354,40 @@
       if (onFocusChanged)
         browser.windows.onFocusChanged.addListener(onFocusChanged);
 
-      let onClosed;
+      // On Thunderbird, closing of a composition window won't notify "windows.onRemoved" events, so we need to listen "tabs.onRemoved" also.
+      let onWindowClosed, onTabClosed;
       const promisedDismissed = new Promise((resolve, _reject) => {
-        onClosed = windowId => {
-          if (windowId == win.id) {
-            win.closed = true;
-            resolve({ buttonIndex: -1 });
+        onWindowClosed = windowId => {
+          if (win.closed) {
+            return;
+          }
+          switch (windowId) {
+            case ownerWin.id:
+              browser.windows.remove(win.id);
+              break;
+            case win.id:
+              win.closed = true;
+              resolve({ buttonIndex: -1 });
+              break;
+          }
+        };
+        onTabClosed = (_tabId, removeInfo) => {
+          if (win.closed || !removeInfo.isWindowClosing) {
+            return;
+          }
+          switch (removeInfo.windowId) {
+            case ownerWin.id:
+              browser.windows.remove(win.id);
+              break;
+            case win.id:
+              win.closed = true;
+              resolve({ buttonIndex: -1 });
+              break;
           }
         };
       });
-      browser.windows.onRemoved.addListener(onClosed);
+      browser.windows.onRemoved.addListener(onWindowClosed);
+      browser.tabs.onRemoved.addListener(onTabClosed);
 
       const result = await Promise.race([
         promisedDismissed,
@@ -1494,7 +1518,8 @@
 
       if (onFocusChanged)
         browser.windows.onFocusChanged.removeListener(onFocusChanged);
-      browser.windows.onRemoved.removeListener(onClosed);
+      browser.windows.onRemoved.removeListener(onWindowClosed);
+      browser.tabs.onRemoved.removeListener(onTabClosed);
 
       if (!win.closed) {
         // A window closed with a blank page won't appear
