@@ -1456,13 +1456,13 @@
                     target: { tabId: activeTab.id },
                     func:   getFrameSize,
                     args:   [params.title, uniqueKey],
-                  }).then(injectionResult => {
-                    const result = injectionResult.result[0];
+                  }).then(injectionResults => {
+                    const result = injectionResults[0].result;
                     if (result.url != fullUrl)
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
-                  });
+                  }).catch(console.error);
                 else
                   browser.tabs.executeScript(activeTab.id, {
                     code: `(${getFrameSize.toString()})(
@@ -1476,7 +1476,7 @@
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(results[0]);
-                  });
+                  }).catch(console.error);
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
                 properties: ['status'],
