@@ -1032,13 +1032,7 @@
         browser.runtime.onMessage.addListener(onMessage);
       });
       try {
-        if (browser.scripting) // Manifest V3
-          await browser.scripting.executeScript({
-            target: { tabId },
-            func: defineRichConfirm,
-            args: [this.uniqueKey],
-          });
-        else
+        if (typeof browser.tabs.executeScript == 'function') // Manifest V2
           await browser.tabs.executeScript(tabId, {
             code: `
               if (!window.RichConfirm)
@@ -1046,6 +1040,12 @@
             `,
             matchAboutBlank: true,
             runAt:           'document_start'
+          });
+        else // Manifest V3
+          await browser.scripting.executeScript({
+            target: { tabId },
+            func: defineRichConfirm,
+            args: [this.uniqueKey],
           });
         const transferableParams = { ...params };
         const injectTransferable = [];
@@ -1115,13 +1115,7 @@
             result
           });
         };
-        if (browser.scripting) // Manifest V3
-          browser.scripting.executeScript({
-            target: { tabId },
-            func: run,
-            args: [this.uniqueKey, originalOnShown, transferableParams, inject],
-          });
-        else
+        if (typeof browser.tabs.executeScript == 'function') // Manifest V2
           browser.tabs.executeScript(tabId, {
             code: `
               (${run.toString()})(
@@ -1133,6 +1127,12 @@
             `,
             matchAboutBlank: true,
             runAt:           'document_start'
+          });
+        else // Manifest V3
+          browser.scripting.executeScript({
+            target: { tabId },
+            func: run,
+            args: [this.uniqueKey, originalOnShown, transferableParams, inject],
           });
         // Don't return the promise directly here, instead await it
         // because the "finally" block must be processed after
@@ -1422,19 +1422,7 @@
                   return;
                 if (timeout)
                   clearTimeout(timeout);
-                if (browser.scripting)
-                  browser.scripting.executeScript({ // Manifest V3
-                    target: { tabId },
-                    func:   getFrameSize,
-                    args:   [params.title, uniqueKey],
-                  }).then(injectionResults => {
-                    const result = injectionResults[0].result;
-                    if (result.url != dialogUrl)
-                      return;
-                    browser.tabs.onUpdated.removeListener(onTabUpdated);
-                    resolve(result);
-                  });
-                else
+                if (typeof browser.tabs.executeScript == 'function') // Manifest V2
                   browser.tabs.executeScript(tabId, {
                     code: `(${getFrameSize.toString()})(
                       ${JSON.stringify(params.title)},
@@ -1448,14 +1436,9 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(results[0]);
                   });
-              };
-              timeout = setTimeout(() => {
-                if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
-                  return;
-                timeout = null;
-                if (browser.scripting)
-                  browser.scripting.executeScript({ // Manifest V3
-                    target: { tabId: activeTab.id },
+                else // Manifest V3
+                  browser.scripting.executeScript({
+                    target: { tabId },
                     func:   getFrameSize,
                     args:   [params.title, uniqueKey],
                   }).then(injectionResults => {
@@ -1464,8 +1447,13 @@
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
-                  }).catch(console.error);
-                else
+                  });
+              };
+              timeout = setTimeout(() => {
+                if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
+                  return;
+                timeout = null;
+                if (typeof browser.tabs.executeScript == 'function') // Manifest V2
                   browser.tabs.executeScript(activeTab.id, {
                     code: `(${getFrameSize.toString()})(
                       ${JSON.stringify(params.title)},
@@ -1478,6 +1466,18 @@
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(results[0]);
+                  }).catch(console.error);
+                else // Manifest V3
+                  browser.scripting.executeScript({
+                    target: { tabId: activeTab.id },
+                    func:   getFrameSize,
+                    args:   [params.title, uniqueKey],
+                  }).then(injectionResults => {
+                    const result = injectionResults[0].result;
+                    if (result.url != dialogUrl)
+                      return;
+                    browser.tabs.onUpdated.removeListener(onTabUpdated);
+                    resolve(result);
                   }).catch(console.error);
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
@@ -1539,15 +1539,15 @@
         const reloadWithBlank = function reloadWithBlank() {
           location.replace('about:blank');
         };
-        (browser.scripting ?
-          browser.scripting.executeScript({ // Manifest V3
-            target: { tabId: activeTab.id },
-            func:   reloadWithBlank,
-          }) :
-          browser.tabs.executeScript(activeTab.id, {
+        (typeof browser.tabs.executeScript == 'function' ?
+          browser.tabs.executeScript(activeTab.id, { // Manifest V2
             code: `(${reloadWithBlank.toString()})();`,
             matchAboutBlank: true,
             runAt:           'document_start'
+          }) :
+          browser.scripting.executeScript({ // Manifest V3
+            target: { tabId: activeTab.id },
+            func:   reloadWithBlank,
           }))
           .then(() => {
             browser.windows.remove(win.id);
