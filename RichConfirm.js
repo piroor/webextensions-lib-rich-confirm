@@ -1006,9 +1006,7 @@
       let onMessage;
       const promisedResult = new Promise((resolve, _reject) => {
         onMessage = (message, _sender) => {
-          if (!message ||
-              typeof message != 'object' ||
-              message.uniqueKey != this.uniqueKey)
+          if (message?.uniqueKey != this.uniqueKey)
             return;
 
           switch (message.type) {
@@ -1248,17 +1246,19 @@
     static async _safeCreateWindow(params) {
       const existingWindowIds = new Set((await browser.windows.getAll()).map(win => win.id));
       const uniqueKeyParam = `popup-id-for-${uniqueKey}=${parseInt(Math.random() * Math.pow(2, 16))}`;
-      const dialogUrl = params.url.replace(/[?#]/, matched => {
+      const dialogUrl = params.url.replace(/[?#]|$/, matched => {
+        if (!matched)
+          return `#${uniqueKeyParam}`;
         if (matched == '?')
           return `?${uniqueKeyParam}&`;
-        else
-          return `?#{uniqueKeyParam}#`;
+        return `?#{uniqueKeyParam}#`;
       });
       let win;
       const promisedWin = browser.windows.create({
         ...params,
         url: dialogUrl,
       }).then(resolvedWin => {
+        // The returned promise won't be resolved until the opened window become fucused.
         console.log('RichConfirm._safeCreateWindow: promised window is resolved');
         win = resolvedWin;
       });
@@ -1285,6 +1285,7 @@
           promisedWin,
         ]);
       }
+      win.dialogUrl = dialogUrl;
       return win;
     }
 
@@ -1336,6 +1337,7 @@
         type:   'popup',
         ...simulatedSize
       });
+      const dialogUrl = win.dialogUrl || fullUrl;
       // Due to a Firefox's bug we cannot open popup type window
       // at specified position.
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
@@ -1427,7 +1429,7 @@
                     args:   [params.title, uniqueKey],
                   }).then(injectionResults => {
                     const result = injectionResults[0].result;
-                    if (result.url != fullUrl)
+                    if (result.url != dialogUrl)
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
@@ -1441,7 +1443,7 @@
                     matchAboutBlank: true,
                     runAt:           'document_start'
                   }).then(results => {
-                    if (results[0].url != fullUrl)
+                    if (results[0].url != dialogUrl)
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(results[0]);
@@ -1458,7 +1460,7 @@
                     args:   [params.title, uniqueKey],
                   }).then(injectionResults => {
                     const result = injectionResults[0].result;
-                    if (result.url != fullUrl)
+                    if (result.url != dialogUrl)
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
@@ -1472,7 +1474,7 @@
                     matchAboutBlank: true,
                     runAt:           'document_start'
                   }).then(results => {
-                    if (results[0].url != fullUrl)
+                    if (results[0].url != dialogUrl)
                       return;
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(results[0]);
@@ -1504,6 +1506,9 @@
                     minHeight
                   )
                 );
+                // This won't be proceeded until the promise returned by windows.create() is resolved,
+                // even if it is already detected via windows.query()... so we'll see oddly sized window
+                // until it become focused.
                 browser.windows.update(win.id, {
                   width:  actualWidth,
                   height: actualHeight,
