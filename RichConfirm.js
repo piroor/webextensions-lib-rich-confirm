@@ -1245,8 +1245,12 @@
     // based on its unique URL.
     static async _safeCreateWindow(params) {
       const existingWindowIds = new Set((await browser.windows.getAll()).map(win => win.id));
-      const uniqueKeyParam = `popup-id-for-${uniqueKey}=${parseInt(Math.random() * Math.pow(2, 16))}`;
-      const dialogUrl = params.url.replace(/[?#]|$/, matched => {
+      // We must not add any extra query or hash for "about:blank", because it is very special URL.
+      // Extension with <all_urls> permission can inject arbitrary script to an "about:blank" page,
+      // but injection will fail for URIs like "about:blank#..." with missing host permission.
+      // Moreover, dialog window with "about:blank" is used to avoid closed windows restoration.
+      const uniqueKeyParam = params.url == 'about:blank' ? null : `popup-id-for-${uniqueKey}=${parseInt(Math.random() * Math.pow(2, 16))}`;
+      const dialogUrl = !uniqueKeyParam ? params.url : params.url.replace(/[?#]|$/, matched => {
         if (!matched)
           return `#${uniqueKeyParam}`;
         if (matched == '?')
@@ -1272,7 +1276,7 @@
               return resolve();
             for (const window of windows) {
               if (existingWindowIds.has(window.id) ||
-                  !window.tabs[0].url.includes(uniqueKeyParam))
+                  (uniqueKeyParam ? !window.tabs[0].url.includes(uniqueKeyParam) : window.tabs[0].url != dialogUrl))
                 continue;
 
               console.log('RichConfirm._safeCreateWindow: new window is detected');
