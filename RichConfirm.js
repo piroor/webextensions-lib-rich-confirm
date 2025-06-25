@@ -1004,9 +1004,10 @@
         tabId = (await browser.tabs.getCurrent()).id;
       }
       let onMessage;
+      const oneTimeKey = `popup-${this.uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
       const promisedResult = new Promise((resolve, _reject) => {
         onMessage = (message, _sender) => {
-          if (message?.uniqueKey != this.uniqueKey)
+          if (message?.oneTimeKey != oneTimeKey)
             return;
 
           switch (message.type) {
@@ -1073,7 +1074,7 @@
         const originalOnShown = stringifyOnShown(params.onShown);
         delete transferableParams.onShown;
 
-        const run = async function run(uniqueKey, originalOnShown, transferableParams, inject) {
+        const run = async function run(uniqueKey, oneTimeKey, originalOnShown, transferableParams, inject) {
           delete window.RichConfirm.result;
           const confirm = new RichConfirm({
             ...transferableParams,
@@ -1103,7 +1104,8 @@
               const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
               browser.runtime.sendMessage({
                 type:         'rich-confirm-dialog-shown',
-                uniqueKey:    uniqueKey,
+                uniqueKey,
+                oneTimeKey,
                 dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
                 dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
               });
@@ -1111,7 +1113,8 @@
           });
           browser.runtime.sendMessage({
             type:      'rich-confirm-dialog-complete',
-            uniqueKey: uniqueKey,
+            uniqueKey,
+            oneTimeKey,
             result
           });
         };
@@ -1120,6 +1123,7 @@
             code: `
               (${run.toString()})(
                 ${this.uniqueKey},
+                ${JSON.stringify(oneTimeKey)},
                 (${originalOnShown.toString()}),
                 ${JSON.stringify(transferableParams)},
                 {${injectTransferable.join(',')}}
@@ -1132,7 +1136,7 @@
           browser.scripting.executeScript({
             target: { tabId },
             func: run,
-            args: [this.uniqueKey, originalOnShown, transferableParams, inject],
+            args: [this.uniqueKey, oneTimeKey, originalOnShown, transferableParams, inject],
           });
         // Don't return the promise directly here, instead await it
         // because the "finally" block must be processed after
