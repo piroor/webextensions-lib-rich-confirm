@@ -1364,12 +1364,19 @@
       }
       const activeTab = win.tabs.find(tab => tab.active);
 
-      const onFocusChanged = !params.modal ? null : windowId => {
-        if (windowId == ownerWin.id)
-          browser.windows.update(win.id, { focused: true });
+      const onFocusChanged = async windowId => {
+        if (!params.modal ||
+            windowId != ownerWin.id) {
+          return;
+        }
+        const updatedOwnerWin = await browser.windows.get(ownerWin.id);
+        if (updatedOwnerWin?.state == 'minimized') {
+          console.log('modal dialog unfocused, but the owner window is minimized');
+          return;
+        }
+        browser.windows.update(win.id, { focused: true });
       };
-      if (onFocusChanged)
-        browser.windows.onFocusChanged.addListener(onFocusChanged);
+      browser.windows.onFocusChanged.addListener(onFocusChanged);
 
       // On Thunderbird, closing of a composition window won't notify "windows.onRemoved" events, so we need to listen "tabs.onRemoved" also.
       let onWindowClosed, onTabClosed;
@@ -1536,8 +1543,7 @@
         })()
       ]);
 
-      if (onFocusChanged)
-        browser.windows.onFocusChanged.removeListener(onFocusChanged);
+      browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.onRemoved.removeListener(onWindowClosed);
       browser.tabs.onRemoved.removeListener(onTabClosed);
 
