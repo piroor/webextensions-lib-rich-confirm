@@ -1369,9 +1369,17 @@
             windowId != ownerWin.id) {
           return;
         }
-        const updatedOwnerWin = await browser.windows.get(ownerWin.id);
+        console.log(`focus of the window ${ownerWin.id} which is the owner of a modal dialog ${win.id} is changed`);
+        const [updatedWin, updatedOwnerWin] = await Promise.all([
+          browser.windows.get(win.id),
+          browser.windows.get(ownerWin.id),
+        ]);
         if (updatedOwnerWin?.state == 'minimized') {
-          console.log('modal dialog unfocused, but the owner window is minimized');
+          console.log(' => but the owner window is minimized');
+          if (updatedWin.state != 'minimized') {
+            console.log(' => minimize the modal dialog also');
+            browser.windows.update(win.id, { state: 'minimized' });
+          }
           return;
         }
         browser.windows.update(win.id, { focused: true });
