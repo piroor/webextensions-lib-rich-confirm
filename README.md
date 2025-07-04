@@ -152,3 +152,33 @@ var result = await RichConfirm.showInPopup(10, {
   }
 });
 ```
+
+
+## Close confirmation dialog from outside
+
+Methods to show a confirmation accepts a functional parameter `onDialogOpened`.
+It will be called when a confirmation dialog is opened, with an object having a `close` method.
+You can close the confirmation dialog from outside of the flow, like following:
+
+```javascript
+var dialogCloser;
+
+async function doWithConfirmation() {
+  var result = await RichConfirm.showInPopup(10, {
+    ...
+    onDialogOpened({ close }) {
+      dialogCloser = close;
+    }
+  });
+  if (result.buttonIndex == 0) {
+    // something critical operations
+  }
+}
+
+doWithConfirmation();
+
+setTimeout(() => {
+  // cancel the confirmation after 30 seconds
+  dialogCloser();
+}, 30000);
+```
