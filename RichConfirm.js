@@ -1156,15 +1156,15 @@
       }
     }
 
-    static async showInPopup(winId, params) {
+    static async showInPopup(ownerWinId, params) {
       let ownerWin;
       if (!params) {
-        params = winId;
+        params = ownerWinId;
         ownerWin = await browser.windows.getLastFocused({});
       }
       else {
         try {
-          ownerWin = await browser.windows.get(winId).catch(_error => null);
+          ownerWin = await browser.windows.get(ownerWinId).catch(_error => null);
         }
         catch(_error) {
         }
