@@ -1123,7 +1123,6 @@
                 dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
               });
             },
-            onDialogOpened: params.onDialogOpened,
           });
           browser.runtime.sendMessage({
             type:      'rich-confirm-dialog-complete',
