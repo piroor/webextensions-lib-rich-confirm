@@ -625,7 +625,7 @@
       }
     }
 
-    async show({ onShown, onDialogOpened } = {}) {
+    async show({ onShown } = {}) {
       this.buildUI();
       await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
@@ -719,19 +719,6 @@
           catch(error) {
             console.error(error);
           }
-        }
-      }
-
-      if (typeof onDialogOpened == 'function') {
-        try {
-           await onDialogOpened({
-             close: () => {
-               this.hide();
-             },
-           });
-        }
-        catch(error) {
-          console.error(error);
         }
       }
 
@@ -1122,8 +1109,7 @@
                 dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
                 dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
               });
-            },
-            onDialogOpened: params.onDialogOpened,
+            }
           });
           browser.runtime.sendMessage({
             type:      'rich-confirm-dialog-complete',
@@ -1439,7 +1425,6 @@
         promisedDismissed,
         (async () => {
           try {
-            let onDialogOpenedCalled = false;
             const frameSize = await new Promise((resolve, _reject) => {
               let timeout;
               const getFrameSize = function getFrameSize(title, uniqueKey) {
@@ -1486,16 +1471,6 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
                   });
-
-                if (typeof params.onDialogOpened == 'function' &&
-                    !onDialogOpenedCalled) {
-                  onDialogOpenedCalled = true;
-                  params.onDialogOpened({
-                    close() {
-                      browser.windows.remove(win.id);
-                    },
-                  });
-                }
               };
               timeout = setTimeout(() => {
                 if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -1527,16 +1502,6 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
                   }).catch(console.error);
-
-                if (typeof params.onDialogOpened == 'function' &&
-                    !onDialogOpenedCalled) {
-                  onDialogOpenedCalled = true;
-                  params.onDialogOpened({
-                    close() {
-                      browser.windows.remove(win.id);
-                    },
-                  });
-                }
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
                 properties: ['status'],
