@@ -724,11 +724,11 @@
 
       if (typeof onDialogOpened == 'function') {
         try {
-           await onDialogOpened({
-             close: () => {
-               this.hide();
-             },
-           });
+          await onDialogOpened({
+            close: () => {
+              this.hide();
+            },
+          });
         }
         catch(error) {
           console.error(error);
