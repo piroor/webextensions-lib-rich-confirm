@@ -625,24 +625,28 @@
       }
     }
 
-    async show({ onShown, onDialogOpened } = {}) {
-      this.buildUI();
-      await new Promise((resolve, _reject) => setTimeout(resolve, 0));
-
-      const range = document.createRange();
-
-      if (this.params.content) {
+    updateContent({ content, message }) {
+      if (content) {
+        const range = document.createRange();
         range.selectNodeContents(this.content);
         range.collapse(false);
-        const fragment = range.createContextualFragment(this.params.content);
+        const fragment = range.createContextualFragment(content);
         range.insertNode(fragment);
+        range.detach();
         for (const element of this.content.querySelectorAll('[accesskey]')) {
           this.updateAccessKey(element);
         }
       }
-      else if (this.params.message) {
-        this.content.textContent = this.params.message;
+      else if (message) {
+        this.content.textContent = message;
       }
+    }
+
+    async show({ onShown, onDialogOpened } = {}) {
+      this.buildUI();
+      await new Promise((resolve, _reject) => setTimeout(resolve, 0));
+
+      this.updateContent(this.params);
 
       if (this.params.checkMessage) {
         this.checkMessage.textContent = this.params.checkMessage;
@@ -653,6 +657,7 @@
         this.checkContainer.classList.add('hidden');
       }
 
+      const range = document.createRange();
       range.selectNodeContents(this.buttonsContainer);
       range.deleteContents();
       const buttons = document.createDocumentFragment();
@@ -727,6 +732,9 @@
           await onDialogOpened({
             close: () => {
               this.hide();
+            },
+            updateContent: ({ content, message }) => {
+              this.updateContent({ content, message });
             },
           });
         }
@@ -1017,10 +1025,12 @@
         tabId = (await browser.tabs.getCurrent()).id;
       }
       let onMessage;
-      const oneTimeKey = `popup-${this.uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
+      const uniqueKey = this.uniqueKey;
+      const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
       const promisedResult = new Promise((resolve, _reject) => {
         onMessage = (message, _sender) => {
-          if (message?.oneTimeKey != oneTimeKey)
+          if (message?.uniqueKey != uniqueKey ||
+              message?.oneTimeKey != oneTimeKey)
             return;
 
           switch (message.type) {
@@ -1030,6 +1040,31 @@
                   params.onReady({
                     width:  message.dialogWidth,
                     height: message.dialogHeight
+                  });
+                }
+                catch(error) {
+                  console.error(error);
+                }
+              }
+              if (typeof params.onDialogOpened == 'function') {
+                try {
+                  params.onDialogOpened({
+                    close() {
+                      browser.tabs.sendMessage(tabId, {
+                        type: 'rich-confirm-dialog-close',
+                        uniqueKey,
+                        oneTimeKey,
+                      });
+                    },
+                    updateContent({ content, message }) {
+                      browser.tabs.sendMessage(tabId, {
+                        type: 'rich-confirm-dialog-update-content',
+                        uniqueKey,
+                        oneTimeKey,
+                        content,
+                        message,
+                      });
+                    },
                   });
                 }
                 catch(error) {
@@ -1106,6 +1141,22 @@
               }
             }
           });
+          const onMessage = (message, _sender) => {
+            if (message?.uniqueKey != uniqueKey ||
+                message?.oneTimeKey != oneTimeKey) {
+              return;
+            }
+            switch (message?.type) {
+              case 'rich-confirm-dialog-close':
+                confirm.hide();
+                break;
+
+              case 'rich-confirm-dialog-update-content':
+                confirm.updateContent(message);
+                break;
+            }
+          }
+          browser.runtime.onMessage.addListener(onMessage);
           const result = await confirm.show({
             onShown(content, _injected) {
               const dialog = content.parentNode;
@@ -1186,25 +1237,24 @@
         }
       }
 
-      const type = this.DIALOG_READY_NOTIFICATION_TYPE;
       const tryRepositionDialogToCenterOfOwner = this._tryRepositionDialogToCenterOfOwner;
-      browser.runtime.onMessage.addListener(function onMessage(message, sender) {
+      const onMessage = (message, sender) => {
         switch (message.type) {
-          case type:
-            browser.runtime.onMessage.removeListener(onMessage);
+          case this.DIALOG_READY_NOTIFICATION_TYPE:
             tryRepositionDialogToCenterOfOwner({
               ...message,
               dialogWindowId: sender.tab.windowId,
             });
             break;
         }
-      });
+      };
+      browser.runtime.onMessage.addListener(onMessage);
 
       return this._showInPopupInternal(ownerWin, {
         ...params,
         inject: {
           ...(params.inject || {}),
-          __RichConfirm__reportScreenMessageType: type,
+          __RichConfirm__reportScreenMessageType: this.DIALOG_READY_NOTIFICATION_TYPE,
           __RichConfirm__ownerWindowId: ownerWin.id,
         },
         onShown: [
@@ -1224,6 +1274,11 @@
             }, 0);
           },
         ],
+      }).catch(_error => {
+        browser.runtime.onMessage.removeListener(onMessage);
+      }).then(result => {
+        browser.runtime.onMessage.removeListener(onMessage);
+        return result;
       });
     }
 
@@ -1438,7 +1493,6 @@
         promisedDismissed,
         (async () => {
           try {
-            let onDialogOpenedCalled = false;
             const frameSize = await new Promise((resolve, _reject) => {
               let timeout;
               const getFrameSize = function getFrameSize(title, uniqueKey) {
@@ -1485,16 +1539,6 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
                   });
-
-                if (typeof params.onDialogOpened == 'function' &&
-                    !onDialogOpenedCalled) {
-                  onDialogOpenedCalled = true;
-                  params.onDialogOpened({
-                    close() {
-                      browser.windows.remove(win.id);
-                    },
-                  });
-                }
               };
               timeout = setTimeout(() => {
                 if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -1526,16 +1570,6 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
                   }).catch(console.error);
-
-                if (typeof params.onDialogOpened == 'function' &&
-                    !onDialogOpenedCalled) {
-                  onDialogOpenedCalled = true;
-                  params.onDialogOpened({
-                    close() {
-                      browser.windows.remove(win.id);
-                    },
-                  });
-                }
               }, 500);
               browser.tabs.onUpdated.addListener(onTabUpdated, {
                 properties: ['status'],
@@ -1575,7 +1609,18 @@
                   //top:    Math.floor(ownerWin.top + ((ownerWin.height - actualHeight) / 2)),
                   //left:   Math.floor(ownerWin.left + ((ownerWin.width - actualWidth) / 2))
                 });
-              }
+              },
+              onDialogOpened({ updateContent }) {
+                if (typeof params.onDialogOpened != 'function') {
+                  return;
+                }
+                params.onDialogOpened({
+                  close() {
+                    browser.windows.remove(win.id);
+                  },
+                  updateContent,
+                });
+              },
             });
           }
           catch(error) {
