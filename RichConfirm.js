@@ -1459,6 +1459,7 @@
 
       // On Thunderbird, closing of a composition window won't notify "windows.onRemoved" events, so we need to listen "tabs.onRemoved" also.
       let onWindowClosed, onTabClosed;
+      let cleanupFrameSizeDetection = () => { };
       const promisedDismissed = new Promise((resolve, _reject) => {
         onWindowClosed = windowId => {
           if (win.closed) {
@@ -1516,6 +1517,7 @@
                   return;
                 if (timeout)
                   clearTimeout(timeout);
+                timeout = null;
                 if (typeof browser.tabs.executeScript == 'function') // Manifest V2
                   browser.tabs.executeScript(tabId, {
                     code: `(${getFrameSize.toString()})(
@@ -1542,6 +1544,13 @@
                     browser.tabs.onUpdated.removeListener(onTabUpdated);
                     resolve(result);
                   });
+              };
+              cleanupFrameSizeDetection = () => {
+                if (timeout)
+                  clearTimeout(timeout);
+                timeout = null;
+                if (browser.tabs.onUpdated.hasListener(onTabUpdated))
+                  browser.tabs.onUpdated.removeListener(onTabUpdated);
               };
               timeout = setTimeout(() => {
                 if (!browser.tabs.onUpdated.hasListener(onTabUpdated))
@@ -1633,6 +1642,7 @@
         })()
       ]);
 
+      cleanupFrameSizeDetection();
       browser.windows.onFocusChanged.removeListener(onFocusChanged);
       browser.windows.onRemoved.removeListener(onWindowClosed);
       browser.tabs.onRemoved.removeListener(onTabClosed);
