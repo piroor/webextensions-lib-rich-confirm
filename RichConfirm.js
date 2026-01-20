@@ -1157,6 +1157,7 @@
             }
           }
           browser.runtime.onMessage.addListener(onMessage);
+          try {
           const result = await confirm.show({
             onShown(content, _injected) {
               const dialog = content.parentNode;
@@ -1181,6 +1182,10 @@
             oneTimeKey,
             result
           });
+          }
+          finally {
+            browser.runtime.onMessage.removeListener(onMessage);
+          }
         };
         if (typeof browser.tabs.executeScript == 'function') // Manifest V2
           browser.tabs.executeScript(tabId, {
@@ -1275,10 +1280,8 @@
           },
         ],
       }).catch(_error => {
+      }).finally(() => {
         browser.runtime.onMessage.removeListener(onMessage);
-      }).then(result => {
-        browser.runtime.onMessage.removeListener(onMessage);
-        return result;
       });
     }
 
