@@ -1158,30 +1158,30 @@
           }
           browser.runtime.onMessage.addListener(onMessage);
           try {
-          const result = await confirm.show({
-            onShown(content, _injected) {
-              const dialog = content.parentNode;
-              const rect   = dialog.getBoundingClientRect();
-              const style  = window.getComputedStyle(dialog, null);
-              // End padding is not included in the scrillable size,
-              // so we manually add them.
-              const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
-              const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
-              browser.runtime.sendMessage({
-                type:         'rich-confirm-dialog-shown',
-                uniqueKey,
-                oneTimeKey,
-                dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
-                dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
-              });
-            },
-          });
-          browser.runtime.sendMessage({
-            type:      'rich-confirm-dialog-complete',
-            uniqueKey,
-            oneTimeKey,
-            result
-          });
+            const result = await confirm.show({
+              onShown(content, _injected) {
+                const dialog = content.parentNode;
+                const rect   = dialog.getBoundingClientRect();
+                const style  = window.getComputedStyle(dialog, null);
+                // End padding is not included in the scrillable size,
+                // so we manually add them.
+                const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
+                const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
+                browser.runtime.sendMessage({
+                  type:         'rich-confirm-dialog-shown',
+                  uniqueKey,
+                  oneTimeKey,
+                  dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
+                  dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
+                });
+              },
+            });
+            browser.runtime.sendMessage({
+              type:      'rich-confirm-dialog-complete',
+              uniqueKey,
+              oneTimeKey,
+              result
+            });
           }
           finally {
             browser.runtime.onMessage.removeListener(onMessage);
