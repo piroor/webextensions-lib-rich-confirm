@@ -1024,7 +1024,7 @@
         params = tabId;
         tabId = (await browser.tabs.getCurrent()).id;
       }
-      let onMessage;
+      let onMessage, onTabRemoved, onTabUpdated;
       const uniqueKey = this.uniqueKey;
       const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
       const promisedResult = new Promise((resolve, _reject) => {
@@ -1078,7 +1078,17 @@
               break;
           }
         };
+        onTabRemoved = (removedTabId, _removeInfo) => {
+          if (removedTabId == tabId)
+            resolve({ buttonIndex: -1 });
+        };
+        onTabUpdated = (updatedTabId, changeInfo, _tab) => {
+          if (updatedTabId == tabId && changeInfo.status == 'loading')
+            resolve({ buttonIndex: -1 });
+        };
         browser.runtime.onMessage.addListener(onMessage);
+        browser.tabs.onRemoved.addListener(onTabRemoved);
+        browser.tabs.onUpdated.addListener(onTabUpdated);
       });
       try {
         if (typeof browser.tabs.executeScript == 'function') // Manifest V2
@@ -1222,6 +1232,10 @@
       finally {
         if (browser.runtime.onMessage.hasListener(onMessage))
           browser.runtime.onMessage.removeListener(onMessage);
+        if (browser.tabs.onRemoved.hasListener(onTabRemoved))
+          browser.tabs.onRemoved.removeListener(onTabRemoved);
+        if (browser.tabs.onUpdated.hasListener(onTabUpdated))
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
       }
     }
 
