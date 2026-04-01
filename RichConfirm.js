@@ -171,6 +171,7 @@ class RichConfirm {
           ...transferableParams,
           uniqueKey,
           inject: inject || {},
+          tab:    true,
         });
         const onMessage = (message, _sender) => {
           if (message?.uniqueKey != uniqueKey ||
@@ -294,8 +295,8 @@ class RichConfirm {
     const simulation = new this.Dialog({
       ...params,
       uniqueKey,
-      popup: true,
-      simulation: true
+      popup:      true,
+      simulation: true,
     });
     simulation.buildUI();
     const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');

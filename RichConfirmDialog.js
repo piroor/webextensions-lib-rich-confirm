@@ -512,6 +512,7 @@ class RichConfirmDialog {
   generateUI() {
     const commonClass = [
       this.commonClass,
+      this.params.tab ? 'in-tab' : '',
       this.params.popup ? 'popup-window' : '',
       this.params.simulation ? 'simulation' : '',
       this.params.type ? `type-${this.params.type}` : '',
