@@ -11,7 +11,7 @@ class RichConfirm {
     this.dialogJsPath = dialogHtmlPath.replace(/\.html$/, '.js');
   }
 
-  static async loadDialogScript() {
+  static async ensureDialogClassLoaded() {
     if (this.Dialog)
       return;
 
@@ -38,7 +38,7 @@ class RichConfirm {
 
   static async show(params) {
     if (!this.Dialog) {
-      await this.loadDialogScript();
+      await this.ensureDialogClassLoaded();
     }
     const confirm = new this.Dialog({
       ...params,
@@ -288,7 +288,7 @@ class RichConfirm {
 
     // Simulated run on the current window to calculate size
     if (!this.Dialog) {
-      await this.loadDialogScript();
+      await this.ensureDialogClassLoaded();
     }
     const simulation = new this.Dialog({
       ...params,
