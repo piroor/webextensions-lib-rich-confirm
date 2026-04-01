@@ -7,15 +7,18 @@
 
 class RichConfirmDialog {
   constructor(params) {
-    this.params = params;
     this.uniqueKey = params.uniqueKey || 'default';
+    this.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${this.uniqueKey}__confirmation-dialog-ready`;
+
+    this.params = params;
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
-    this.onClick = this.onClick.bind(this);
-    this.onKeyDown = this.onKeyDown.bind(this);
-    this.onKeyUp = this.onKeyUp.bind(this);
+
+    this.onClick       = this.onClick.bind(this);
+    this.onKeyDown     = this.onKeyDown.bind(this);
+    this.onKeyUp       = this.onKeyUp.bind(this);
     this.onContextMenu = this.onContextMenu.bind(this);
-    this.onUnload = this.onUnload.bind(this);
+    this.onUnload      = this.onUnload.bind(this);
   }
   get commonClass() {
     return `rich-confirm-${this.uniqueKey}`;
@@ -747,6 +750,16 @@ class RichConfirmDialog {
       if (!this.ui ||
           !this.ui.classList)
         return;
+
+      browser.runtime.sendMessage({
+        type:          this.DIALOG_READY_NOTIFICATION_TYPE,
+        ownerWindowId: this.params.ownerWindowId,
+        availLeft:     screen.availLeft,
+        availTop:      screen.availTop,
+        availWidth:    screen.availWidth,
+        availHeight:   screen.availHeight,
+      });
+
       // Apply overflow:auto after all contents are correctly rendered.
       this.ui.classList.add('shown');
     }, 10);

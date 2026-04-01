@@ -306,7 +306,8 @@ class RichConfirm {
     const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
 
     const tryRepositionDialogToCenterOfOwner = this._tryRepositionDialogToCenterOfOwner;
-    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, onShown: undefined, onDialogOpened: undefined, inject: undefined}))}`;
+    const DIALOG_READY_NOTIFICATION_TYPE = this.DIALOG_READY_NOTIFICATION_TYPE;
+    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, onShown: undefined, onDialogOpened: undefined, inject: undefined}))}`;
 
     const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
     const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
@@ -348,25 +349,36 @@ class RichConfirm {
     simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
 
     let onMessage, onWindowClosed;
-    const promisedResult = new Promise((resolve, reject) => {
+    let win;
+    const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, sender) => {
-        if (message?.type == 'rich-confirm-dialog-complete' &&
-            message?.uniqueKey == uniqueKey &&
-            message?.oneTimeKey == oneTimeKey) {
-          resolve(message.result);
+        switch (message?.type) {
+          case DIALOG_READY_NOTIFICATION_TYPE:
+            tryRepositionDialogToCenterOfOwner({
+              ...message,
+              dialogWindowId: sender.tab.windowId,
+            });
+            break;
+
+          case 'rich-confirm-dialog-complete':
+            if (message?.uniqueKey == uniqueKey &&
+                message?.oneTimeKey == oneTimeKey) {
+              resolve(message.result);
+            }
+            break;
         }
       };
       onWindowClosed = windowId => {
-        if (win && windowId == win.id) {
-           win.closed = true;
-           resolve({ buttonIndex: -1 });
+        if (windowId == win?.id) {
+          win.closed = true;
+          resolve({ buttonIndex: -1 });
         }
       };
       browser.runtime.onMessage.addListener(onMessage);
       browser.windows.onRemoved.addListener(onWindowClosed);
     });
 
-    const win = await browser.windows.create({
+    win = await browser.windows.create({
       url: dialogFullUrl,
       type: 'popup',
       ...simulatedSize
@@ -426,4 +438,5 @@ class RichConfirm {
   }
 }
 RichConfirm.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
+RichConfirm.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${RichConfirm.uniqueKey}__confirmation-dialog-ready`;
 window.RichConfirm = RichConfirm;
