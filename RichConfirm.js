@@ -323,8 +323,43 @@ class RichConfirm {
     simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
     simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
 
-    let onMessage, onWindowClosed;
+    let onMessage, onWindowClosed, onTabClosed;
+    let cleanupFrameSizeDetection = () => { };
     let win;
+    const promisedDismissed = new Promise((resolve, _reject) => {
+      onWindowClosed = windowId => {
+        if (win?.closed) {
+          return;
+        }
+        switch (windowId) {
+          case ownerWin.id:
+            if (win)
+              browser.windows.remove(win.id);
+            break;
+          case win?.id:
+            win.closed = true;
+            resolve({ buttonIndex: -1 });
+            break;
+        }
+      };
+      onTabClosed = (_tabId, removeInfo) => {
+        if (win.closed || !removeInfo.isWindowClosing) {
+          return;
+        }
+        switch (removeInfo.windowId) {
+          case ownerWin.id:
+            if (win)
+              browser.windows.remove(win.id);
+            break;
+          case win?.id:
+            win.closed = true;
+            resolve({ buttonIndex: -1 });
+            break;
+        }
+      };
+      browser.windows.onRemoved.addListener(onWindowClosed);
+      browser.tabs.onRemoved.addListener(onTabClosed);
+    });
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, sender) => {
         switch (message?.type) {
@@ -343,45 +378,136 @@ class RichConfirm {
             break;
         }
       };
-      onWindowClosed = windowId => {
-        if (windowId == win?.id) {
-          win.closed = true;
-          resolve({ buttonIndex: -1 });
-        }
-      };
       browser.runtime.onMessage.addListener(onMessage);
-      browser.windows.onRemoved.addListener(onWindowClosed);
     });
 
-    win = await browser.windows.create({
-      url: dialogFullUrl,
+    win = await this._safeCreateWindow({
+      url:  dialogFullUrl,
       type: 'popup',
-      ...simulatedSize
+      ...simulatedSize,
     });
-
+    // Due to a Firefox's bug we cannot open popup type window
+    // at specified position.
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
+    // Thus we need to move the window immediately after it is opened.
     if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
         win.top + win.height - (win.height / 2) <= ownerWin.top ||
         win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
         win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
+      // But, such a move will produce an annoying flash.
+      // So, I grudgingly accept the position of the dialog placed
+      // if the popup (partially or fully) covers the owner window.
       browser.windows.update(win.id, {
         top:  simulatedSize.top,
         left: simulatedSize.left
       });
     }
+    const activeTab = win.tabs.find(tab => tab.active);
+
+    const onFocusChanged = async windowId => {
+      if (!params.modal ||
+          windowId != ownerWin.id) {
+        return;
+      }
+      console.log(`focus of the window ${ownerWin.id} which is the owner of a modal dialog ${win.id} is changed`);
+      const [updatedWin, updatedOwnerWin] = await Promise.all([
+        browser.windows.get(win.id),
+        browser.windows.get(ownerWin.id),
+      ]);
+      if (updatedOwnerWin?.state == 'minimized') {
+        console.log(' => but the owner window is minimized');
+        if (updatedWin.state != 'minimized') {
+          console.log(' => minimize the modal dialog also');
+          browser.windows.update(win.id, { state: 'minimized' });
+        }
+        return;
+      }
+      browser.windows.update(win.id, { focused: true });
+    };
+    browser.windows.onFocusChanged.addListener(onFocusChanged);
 
     try {
-      return await promisedResult;
+      return await Promise.race([promisedResult, promisedDismissed]);
     }
     finally {
       if (browser.runtime.onMessage.hasListener(onMessage))
         browser.runtime.onMessage.removeListener(onMessage);
       if (browser.windows.onRemoved.hasListener(onWindowClosed))
         browser.windows.onRemoved.removeListener(onWindowClosed);
-      
+      if (browser.tabs.onRemoved.hasListener(onTabClosed))
+        browser.tabs.onRemoved.removeListener(onTabClosed);
+      if (browser.windows.onFocusChanged.hasListener(onFocusChanged))
+        browser.windows.onFocusChanged.removeListener(onFocusChanged);
       if (win && !win.closed) {
-        browser.windows.remove(win.id).catch(()=>{});
+        // A window closed with a blank page won't appear
+        // in the "Recently Closed Windows" list.
+        const onTabUpdated = (tabId, changeInfo, tab) => {
+          if (tabId != activeTab.id ||
+              tab.url != 'about:blank' ||
+              changeInfo.status == 'loading')
+            return;
+          browser.tabs.onUpdated.removeListener(onTabUpdated);
+          browser.windows.remove(win.id).catch(()=>{});
+        };
+        browser.tabs.onUpdated.addListener(onTabUpdated);
+        browser.tabs.update(activeTab.id, { url: 'about:blank' });
       }
     }
+  }
+
+  // Workaround for a problem on an overload situation.
+  // When the system is in overload, the promise returned by browser.windows.create()
+  // won't be resolved forever (until the window is closed).
+  // So, we detect the opened window without the promise in different way
+  // based on its unique URL.
+  static async _safeCreateWindow(params) {
+    const existingWindowIds = new Set((await browser.windows.getAll()).map(win => win.id));
+    // We must not add any extra query or hash for "about:blank", because it is very special URL.
+    // Extension with <all_urls> permission can inject arbitrary script to an "about:blank" page,
+    // but injection will fail for URIs like "about:blank#..." with missing host permission.
+    // Moreover, dialog window with "about:blank" is used to avoid closed windows restoration.
+    const uniqueKeyParam = params.url == 'about:blank' ? null : `popup-id-for-${this.uniqueKey}=${parseInt(Math.random() * Math.pow(2, 16))}`;
+    const dialogUrl = !uniqueKeyParam ? params.url : params.url.replace(/[?#]|$/, matched => {
+      if (!matched)
+        return `#${uniqueKeyParam}`;
+      if (matched == '?')
+        return `?${uniqueKeyParam}&`;
+      return `?#{uniqueKeyParam}#`;
+    });
+    let win;
+    const promisedWin = browser.windows.create({
+      ...params,
+      url: dialogUrl,
+    }).then(resolvedWin => {
+      // The returned promise won't be resolved until the opened window become fucused.
+      console.log('RichConfirm._safeCreateWindow: promised window is resolved');
+      win = resolvedWin;
+    });
+    while (!win) {
+      await Promise.race([
+        new Promise(async (resolve, _reject) => {
+          if (win)
+            return resolve();
+          const windows = await browser.windows.getAll({ populate: true });
+          if (win)
+            return resolve();
+          for (const window of windows) {
+            if (existingWindowIds.has(window.id) ||
+                (uniqueKeyParam ? !window.tabs[0].url.includes(uniqueKeyParam) : window.tabs[0].url != dialogUrl))
+              continue;
+
+            console.log('RichConfirm._safeCreateWindow: new window is detected');
+            win = window;
+            resolve();
+            return;
+          }
+          setTimeout(resolve, 150);
+        }),
+        promisedWin,
+      ]);
+    }
+    win.dialogUrl = dialogUrl;
+    return win;
   }
 
   static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight }) {
