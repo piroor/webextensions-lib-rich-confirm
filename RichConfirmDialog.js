@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018-2025 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2026 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
@@ -1074,8 +1074,8 @@ window.RichConfirmDialog = RichConfirmDialog;
 window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'RichConfirmDialog';
 
 if (location.search.includes('__RichConfirm__')) {
-
   window.addEventListener('DOMContentLoaded', () => {
     window[window.RICH_CONFIRM_DIALOG_CLASS_NAME].onLoaded();
   }, { once: true });
 }
+export default RichConfirmDialog;

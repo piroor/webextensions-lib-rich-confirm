@@ -1,5 +1,5 @@
 /*
- license: The MIT License, Copyright (c) 2018-2025 YUKI "Piro" Hiroshi
+ license: The MIT License, Copyright (c) 2018-2026 YUKI "Piro" Hiroshi
  original:
    https://github.com/piroor/webextensions-lib-rich-confirm
 */
@@ -26,14 +26,7 @@ class RichConfirm {
       }
     }
 
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = this.dialogJsPath;
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-    this.Dialog = window[this.DIALOG_CLASS_NAME];
+    this.Dialog = (await import(this.dialogJsPath)).default;
   }
 
   static async show(params) {
@@ -412,6 +405,6 @@ class RichConfirm {
 }
 RichConfirm.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
 RichConfirm.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${RichConfirm.uniqueKey}__confirmation-dialog-ready`;
-RichConfirm.DIALOG_CLASS_NAME = 'RichConfirmDialog';
 RichConfirm.Dialog = null;
-window.RichConfirm = RichConfirm;
+
+export default RichConfirm;

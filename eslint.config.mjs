@@ -17,8 +17,8 @@ export default [{
             requireConfigFile: false,
         },
 
-        ecmaVersion: 2020,
-        sourceType: "script",
+        ecmaVersion: 2022,
+        sourceType: "module",
     },
 
     rules: {
