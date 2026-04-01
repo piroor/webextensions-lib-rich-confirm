@@ -29,13 +29,21 @@ class RichConfirm {
     this.Dialog = (await import(this.dialogJsPath)).default;
   }
 
+  static get uniqueKey() {
+    return this.$uniqueKey ||= parseInt(Math.random() * Math.pow(2, 16));
+  }
+
+  static get DIALOG_READY_NOTIFICATION_TYPE() {
+    return `__RichConfirm_${this.uniqueKey}__confirmation-dialog-ready`;
+  }
+
   static async show(params) {
     if (!this.Dialog) {
       await this.ensureDialogClassLoaded();
     }
     const confirm = new this.Dialog({
       ...params,
-      uniqueKey: this.uniqueKey
+      uniqueKey: this.uniqueKey,
     });
     return confirm.show();
   }
@@ -403,8 +411,6 @@ class RichConfirm {
     });
   }
 }
-RichConfirm.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
-RichConfirm.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${RichConfirm.uniqueKey}__confirmation-dialog-ready`;
 RichConfirm.Dialog = null;
 
 export default RichConfirm;

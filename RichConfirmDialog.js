@@ -639,7 +639,7 @@ class RichConfirmDialog {
     }
   }
 
-  updateContent({ content, message }) {
+  /* async */updateContent({ content, message }) {
     if (content) {
       const range = document.createRange();
       range.selectNodeContents(this.content);
@@ -690,7 +690,7 @@ class RichConfirmDialog {
     this.buildUI();
     await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
-    this.updateContent(this.params);
+    await this.updateContent(this.params);
 
     if (this.params.checkMessage) {
       this.checkMessage.textContent = this.params.checkMessage;
