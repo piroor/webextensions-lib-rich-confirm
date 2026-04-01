@@ -12,7 +12,7 @@ class RichConfirm {
   }
 
   static async loadDialogScript() {
-    if (window.RichConfirmDialog)
+    if (this.Dialog)
       return;
 
     if (!this.dialogJsPath) {
@@ -26,20 +26,21 @@ class RichConfirm {
       }
     }
 
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = this.dialogJsPath;
       script.onload = resolve;
       script.onerror = reject;
       document.head.appendChild(script);
     });
+    this.Dialog = window[this.DIALOG_CLASS_NAME];
   }
 
   static async show(params) {
-    if (!window.RichConfirmDialog) {
+    if (!this.Dialog) {
       await this.loadDialogScript();
     }
-    const confirm = new window.RichConfirmDialog({
+    const confirm = new this.Dialog({
       ...params,
       uniqueKey: this.uniqueKey
     });
@@ -138,7 +139,7 @@ class RichConfirm {
         await browser.scripting.executeScript({
           target: { tabId },
           func: (codeStr) => {
-            if (!window.RichConfirmDialog) {
+            if (!this.Dialog) {
               const script = document.createElement('script');
               script.textContent = codeStr;
               (document.head || document.documentElement).appendChild(script);
@@ -176,8 +177,8 @@ class RichConfirm {
       delete transferableParams.onShown;
 
       const run = async function run(uniqueKey, oneTimeKey, originalOnShown, transferableParams, inject) {
-        delete window.RichConfirmDialog.result; // clean up old result if any
-        const confirm = new window.RichConfirmDialog({
+        delete this.Dialog.result; // clean up old result if any
+        const confirm = new this.Dialog({
           ...transferableParams,
           uniqueKey,
           inject: inject || {},
@@ -313,10 +314,10 @@ class RichConfirm {
     const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
 
     // Simulated run on the current window to calculate size
-    if (!window.RichConfirmDialog) {
+    if (!this.Dialog) {
       await this.loadDialogScript();
     }
-    const simulation = new window.RichConfirmDialog({
+    const simulation = new this.Dialog({
       ...params,
       uniqueKey,
       popup: true,
@@ -327,13 +328,14 @@ class RichConfirm {
     simulatedContainer.style.minWidth  = `${minWidth}px`;
     simulatedContainer.style.minHeight = `${minHeight}px`;
     await new Promise((resolve, _reject) => {
-      simulation.show({
-        onShown() {
-          setTimeout(() => {
-            resolve();
-          }, 0);
-        }
-      });
+      const originalOnShown = simulation.onShown;
+      simulation.onShown = async (...params) => {
+        await originalOnShown.apply(simulation, params);
+        setTimeout(() => {
+          resolve();
+        }, 0);
+      };
+      simulation.show();
     });
     const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
     const simulatedRect   = simulatedDialog.getBoundingClientRect();
@@ -439,4 +441,6 @@ class RichConfirm {
 }
 RichConfirm.uniqueKey = parseInt(Math.random() * Math.pow(2, 16));
 RichConfirm.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${RichConfirm.uniqueKey}__confirmation-dialog-ready`;
+RichConfirm.DIALOG_CLASS_NAME = 'RichConfirmDialog';
+RichConfirm.Dialog = null;
 window.RichConfirm = RichConfirm;

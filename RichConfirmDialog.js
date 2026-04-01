@@ -656,7 +656,17 @@ class RichConfirmDialog {
     }
   }
 
-  async show({ onShown, onDialogOpened } = {}) {
+  async onShown(container, injected) {
+    // override me!
+    console.log('onShown: ', { container, injected });
+  }
+
+  async onDialogOpened({ close, updateContent }) {
+    // override me!
+    console.log('onDialogOpened: ', { close, updateContent });
+  }
+
+  async show() {
     this.buildUI();
     await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
@@ -696,65 +706,28 @@ class RichConfirmDialog {
 
     range.detach();
 
-    if (typeof this.params.onShown == 'function') {
-      try {
-        await this.params.onShown(this.content, this.params.inject || {});
-      }
-      catch(error) {
-        console.error(error);
-      }
-    }
-    else if (Array.isArray(this.params.onShown)) {
-      for (const onShownPart of this.params.onShown) {
-        if (typeof onShownPart != 'function')
-          continue;
-        try {
-          await onShownPart(this.content, this.params.inject || {});
-        }
-        catch(error) {
-          console.error(error);
-        }
-      }
-    }
-
     this.ui.querySelector('.rich-confirm-dialog').setAttribute('aria-modal', !!this.params.modal);
     this.ui.classList.add('show');
 
-    if (typeof onShown == 'function') {
-      try {
-        await onShown(this.content, this.params.inject || {});
-      }
-      catch(error) {
-        console.error(error);
-      }
+    try {
+      await this.onShown(this.content, this.params.inject || {});
     }
-    else if (Array.isArray(onShown)) {
-      for (const onShownPart of onShown) {
-        if (typeof onShownPart != 'function')
-          continue;
-        try {
-          await onShownPart(this.content, this.params.inject || {});
-        }
-        catch(error) {
-          console.error(error);
-        }
-      }
+    catch(error) {
+      console.error(error);
     }
 
-    if (typeof onDialogOpened == 'function') {
-      try {
-        await onDialogOpened({
-          close: () => {
-            this.hide();
-          },
-          updateContent: ({ content, message }) => {
-            this.updateContent({ content, message });
-          },
-        });
-      }
-      catch(error) {
-        console.error(error);
-      }
+    try {
+      await this.onDialogOpened({
+        close: () => {
+          this.hide();
+        },
+        updateContent: ({ content, message }) => {
+          this.updateContent({ content, message });
+        },
+      });
+    }
+    catch(error) {
+      console.error(error);
     }
 
     setTimeout(() => {
