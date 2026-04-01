@@ -163,38 +163,13 @@ class RichConfirm {
         ) ? value.toString() : JSON.stringify(value);
         injectTransferable.push(`${JSON.stringify(key)} : ${transferable}`);
       }
-      const stringifyOnShown = onShown => {
-        if (Array.isArray(onShown))
-          return `[${onShown.map(stringifyOnShown).join(',')}]`;
-        return typeof onShown == 'function' ?
-          onShown.toString()
-            .replace(/^\s*(async\s+)?function/, '$1')
-            .replace(/^\s*(async\s+)?/, '$1 function ')
-            .replace(/^\s*(async\s+)?function ((?:\([^=\)]*\)|[^\(\)=]+)\s*=>\s*\{)/, '$1 $2') :
-          '() => {}';
-      };
-      const originalOnShown = stringifyOnShown(params.onShown);
-      delete transferableParams.onShown;
 
-      const run = async function run(uniqueKey, oneTimeKey, originalOnShown, transferableParams, inject) {
+      const run = async function run(uniqueKey, oneTimeKey, transferableParams, inject) {
         delete this.Dialog.result; // clean up old result if any
         const confirm = new this.Dialog({
           ...transferableParams,
           uniqueKey,
           inject: inject || {},
-          async onShown(content, inject) {
-            if (!Array.isArray(originalOnShown))
-              originalOnShown = [originalOnShown];
-            for (const originalOnShownPart of originalOnShown) {
-              try {
-                if (typeof originalOnShownPart == 'function')
-                  await originalOnShownPart(content, inject);
-              }
-              catch(error) {
-                console.error(error);
-              }
-            }
-          }
         });
         const onMessage = (message, _sender) => {
           if (message?.uniqueKey != uniqueKey ||
@@ -213,24 +188,25 @@ class RichConfirm {
         }
         browser.runtime.onMessage.addListener(onMessage);
         try {
-          const result = await confirm.show({
-            onShown(content, _injected) {
-              const dialog = content.parentNode;
-              const rect   = dialog.getBoundingClientRect();
-              const style  = window.getComputedStyle(dialog, null);
-              // End padding is not included in the scrillable size,
-              // so we manually add them.
-              const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
-              const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
-              browser.runtime.sendMessage({
-                type:         'rich-confirm-dialog-shown',
-                uniqueKey,
-                oneTimeKey,
-                dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
-                dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
-              });
-            },
-          });
+          const originalOnShown = confirm.onShown;
+          confirm.onShown = async (content, _injected) => {
+            await originalOnShown.call(confirm, content, _injected);
+            const dialog = content.parentNode;
+            const rect   = dialog.getBoundingClientRect();
+            const style  = window.getComputedStyle(dialog, null);
+            // End padding is not included in the scrillable size,
+            // so we manually add them.
+            const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
+            const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
+            browser.runtime.sendMessage({
+              type:         'rich-confirm-dialog-shown',
+              uniqueKey,
+              oneTimeKey,
+              dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
+              dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
+            });
+          };
+          const result = await confirm.show();
           browser.runtime.sendMessage({
             type:      'rich-confirm-dialog-complete',
             uniqueKey,
@@ -249,7 +225,6 @@ class RichConfirm {
             (${run.toString()})(
               ${JSON.stringify(this.uniqueKey)},
               ${JSON.stringify(oneTimeKey)},
-              (${originalOnShown.toString()}),
               ${JSON.stringify(transferableParams)},
               {${injectTransferable.join(',')}}
             );
@@ -261,7 +236,7 @@ class RichConfirm {
         browser.scripting.executeScript({
           target: { tabId },
           func: run,
-          args: [this.uniqueKey, oneTimeKey, originalOnShown, transferableParams, inject],
+          args: [this.uniqueKey, oneTimeKey, transferableParams, inject],
         });
 
       const result = await promisedResult;
