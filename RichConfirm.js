@@ -188,9 +188,7 @@ class RichConfirm {
         }
         browser.runtime.onMessage.addListener(onMessage);
         try {
-          const originalOnShown = confirm.onShown;
           confirm.onShown = async (content, _injected) => {
-            await originalOnShown.call(confirm, content, _injected);
             const dialog = content.parentNode;
             const rect   = dialog.getBoundingClientRect();
             const style  = window.getComputedStyle(dialog, null);
@@ -303,9 +301,7 @@ class RichConfirm {
     simulatedContainer.style.minWidth  = `${minWidth}px`;
     simulatedContainer.style.minHeight = `${minHeight}px`;
     await new Promise((resolve, _reject) => {
-      const originalOnShown = simulation.onShown;
-      simulation.onShown = async (...params) => {
-        await originalOnShown.apply(simulation, params);
+      simulation.onShown = () => {
         setTimeout(() => {
           resolve();
         }, 0);
