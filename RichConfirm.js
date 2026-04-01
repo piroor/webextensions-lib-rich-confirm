@@ -281,54 +281,66 @@ class RichConfirm {
     const uniqueKey = this.uniqueKey;
     const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
 
-    const tryRepositionDialogToCenterOfOwner = this._tryRepositionDialogToCenterOfOwner;
-    const DIALOG_READY_NOTIFICATION_TYPE = this.DIALOG_READY_NOTIFICATION_TYPE;
-    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, onShown: undefined, onDialogOpened: undefined, inject: undefined}))}`;
+    const openInTab = (
+      params.forceInTab /* for debugging */ ||
+      (/^Mac/i.test(navigator.platform) &&
+       ownerWin.state == 'fullscreen')
+    );
+    let dialogFullUrl, simulatedSize;
 
-    const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
-    const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
-
-    // Simulated run on the current window to calculate size
-    if (!this.Dialog) {
-      await this.ensureDialogClassLoaded();
+    // on macOS, a popup window opened from a fullscreen browser window is always
+    // opened as a new fullscreen window, thus we need to fallback to a workaround.
+    if (openInTab) {
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: true, popup: false}))}`;
     }
-    const simulation = new this.Dialog({
-      ...params,
-      uniqueKey,
-      popup:      true,
-      simulation: true,
-    });
-    simulation.buildUI();
-    const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
-    simulatedContainer.style.minWidth  = `${minWidth}px`;
-    simulatedContainer.style.minHeight = `${minHeight}px`;
-    await new Promise((resolve, _reject) => {
-      simulation.onShown = () => {
-        setTimeout(() => {
-          resolve();
-        }, 0);
+    else {
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id}))}`;
+
+      const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
+      const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
+
+      // Simulated run on the current window to calculate size
+      if (!this.Dialog) {
+        await this.ensureDialogClassLoaded();
+      }
+      const simulation = new this.Dialog({
+        ...params,
+        uniqueKey,
+        popup:      true,
+        simulation: true,
+      });
+      simulation.buildUI();
+      const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
+      simulatedContainer.style.minWidth  = `${minWidth}px`;
+      simulatedContainer.style.minHeight = `${minHeight}px`;
+      await new Promise((resolve, _reject) => {
+        simulation.onShown = () => {
+          setTimeout(() => {
+            resolve();
+          }, 0);
+        };
+        simulation.show();
+      });
+      const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
+      const simulatedRect   = simulatedDialog.getBoundingClientRect();
+
+      const safetyFactor  = 1.05;
+      simulatedSize = {
+        width:  Math.ceil(simulatedRect.width * safetyFactor),
+        height: Math.ceil(simulatedRect.height * safetyFactor)
       };
-      simulation.show();
-    });
-    const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
-    const simulatedRect   = simulatedDialog.getBoundingClientRect();
+      simulation.hide();
 
-    const safetyFactor  = 1.05;
-    const simulatedSize = {
-      width:  Math.ceil(simulatedRect.width * safetyFactor),
-      height: Math.ceil(simulatedRect.height * safetyFactor)
-    };
-    simulation.hide();
-
-    simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
-    simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
+      simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
+      simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
+    }
 
     let onMessage;
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, sender) => {
         switch (message?.type) {
-          case DIALOG_READY_NOTIFICATION_TYPE:
-            tryRepositionDialogToCenterOfOwner({
+          case this.DIALOG_READY_NOTIFICATION_TYPE:
+            this._tryRepositionDialogToCenterOfOwner({
               ...message,
               dialogWindowId: sender.tab.windowId,
             });
@@ -345,28 +357,58 @@ class RichConfirm {
       browser.runtime.onMessage.addListener(onMessage);
     });
 
-    const win = await this._safeCreateWindow({
-      url:  dialogFullUrl,
-      type: 'popup',
-      ...simulatedSize,
-    });
-    // Due to a Firefox's bug we cannot open popup type window
-    // at specified position.
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
-    // Thus we need to move the window immediately after it is opened.
-    if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
-        win.top + win.height - (win.height / 2) <= ownerWin.top ||
-        win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
-        win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
-      // But, such a move will produce an annoying flash.
-      // So, I grudgingly accept the position of the dialog placed
-      // if the popup (partially or fully) covers the owner window.
-      browser.windows.update(win.id, {
-        top:  simulatedSize.top,
-        left: simulatedSize.left
-      });
+    let canvasTab, win;
+    if (openInTab) {
+      win = ownerWin;
+      await Promise.race([
+        (() => {
+          let onUpdated;
+          return  new Promise(async (resolve, _reject) => {
+            onUpdated = (tabId, changes, tab) => {
+              if (tabId != canvasTab?.id ||
+                  changes.status != 'complete' ||
+                  tab.url != dialogFullUrl)
+                return;
+              resolve();
+            };
+            browser.tabs.onUpdated.addListener(onUpdated);
+            canvasTab = await browser.tabs.create({
+              windowId: ownerWin.id,
+              url:      dialogFullUrl,
+              active:   true
+            });
+          })
+          .finally(() => {
+            browser.tabs.onUpdated.removeListener(onUpdated);
+          });
+        })(),
+        new Promise(resolve => setTimeout(resolve, 1000)),
+      ]);
     }
-    const activeTab = win.tabs.find(tab => tab.active);
+    else {
+      win = await this._safeCreateWindow({
+        url:  dialogFullUrl,
+        type: 'popup',
+        ...simulatedSize,
+      });
+      // Due to a Firefox's bug we cannot open popup type window
+      // at specified position.
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
+      // Thus we need to move the window immediately after it is opened.
+      if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
+          win.top + win.height - (win.height / 2) <= ownerWin.top ||
+          win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
+          win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
+        // But, such a move will produce an annoying flash.
+        // So, I grudgingly accept the position of the dialog placed
+        // if the popup (partially or fully) covers the owner window.
+        browser.windows.update(win.id, {
+          top:  simulatedSize.top,
+          left: simulatedSize.left
+        });
+      }
+      canvasTab = win.tabs.find(tab => tab.active);
+    }
 
     let onWindowClosed, onTabClosed;
     const promisedDismissed = new Promise((resolve, _reject) => {
@@ -385,7 +427,7 @@ class RichConfirm {
             break;
         }
       };
-      onTabClosed = (_tabId, removeInfo) => {
+      onTabClosed = (tabId, removeInfo) => {
         if (win.closed || !removeInfo.isWindowClosing) {
           return;
         }
@@ -394,9 +436,15 @@ class RichConfirm {
             if (win)
               browser.windows.remove(win.id);
             break;
+
           case win?.id:
             win.closed = true;
             resolve({ buttonIndex: -1 });
+            break;
+
+          default:
+            if (tabId == canvasTab.id)
+              resolve({ buttonIndex: -1 });
             break;
         }
       };
@@ -438,19 +486,30 @@ class RichConfirm {
         browser.tabs.onRemoved.removeListener(onTabClosed);
       if (browser.windows.onFocusChanged.hasListener(onFocusChanged))
         browser.windows.onFocusChanged.removeListener(onFocusChanged);
-      if (win && !win.closed) {
-        // A window closed with a blank page won't appear
-        // in the "Recently Closed Windows" list.
+
+      if (openInTab ||
+          (win && !win.closed)) {
+        /*
+        // A window/tab closed with a blank page won't appear
+        // in the "Recently Closed Windows/Tabs" list.
         const onTabUpdated = (tabId, changeInfo, tab) => {
-          if (tabId != activeTab.id ||
+          if (tabId != canvasTab.id ||
               tab.url != 'about:blank' ||
               changeInfo.status == 'loading')
             return;
           browser.tabs.onUpdated.removeListener(onTabUpdated);
-          browser.windows.remove(win.id).catch(()=>{});
+          if (openInTab)
+            browser.tabs.remove(canvasTab.id);
+          else
+            browser.windows.remove(win.id).catch(()=>{});
         };
         browser.tabs.onUpdated.addListener(onTabUpdated);
-        browser.tabs.update(activeTab.id, { url: 'about:blank' });
+        browser.tabs.update(canvasTab.id, { url: 'about:blank' });
+        */
+        if (openInTab)
+          browser.tabs.remove(canvasTab.id);
+        else
+          browser.windows.remove(win.id).catch(()=>{});
       }
     }
   }

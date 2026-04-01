@@ -1042,7 +1042,6 @@ class RichConfirmDialog {
     const dialog = new this({
       ...params,
       uniqueKey,
-      popup: true
     });
 
     // Wire communication internally or trust window.opener / browser.runtime
