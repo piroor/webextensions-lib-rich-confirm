@@ -324,7 +324,6 @@ class RichConfirm {
     simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
 
     let onMessage, onWindowClosed, onTabClosed;
-    let cleanupFrameSizeDetection = () => { };
     let win;
     const promisedDismissed = new Promise((resolve, _reject) => {
       onWindowClosed = windowId => {
