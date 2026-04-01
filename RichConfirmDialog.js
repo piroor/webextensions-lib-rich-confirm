@@ -1031,44 +1031,51 @@ class RichConfirmDialog {
     }
   }
 
+  // For popup mode to initialize from query string
+  static onLoaded() {
+    const searchParams = new URLSearchParams(location.search);
+    const uniqueKey = searchParams.get('uniqueKey');
+    const oneTimeKey = searchParams.get('oneTimeKey');
+
+    let params = {};
+    const paramsJson = searchParams.get('params');
+    if (paramsJson) {
+      try {
+        params = JSON.parse(paramsJson);
+      }
+      catch (error) {
+        console.error(error);
+      }
+    }
+
+    const dialog = new this({
+      ...params,
+      uniqueKey,
+      popup: true
+    });
+
+    // Wire communication internally or trust window.opener / browser.runtime
+    // We'll trust browser.runtime.sendMessage to notify completion
+    dialog.show().then(result => {
+      browser.runtime.sendMessage({
+        type: 'rich-confirm-dialog-complete',
+        uniqueKey,
+        oneTimeKey,
+        result
+      }).then(() => {
+        window.close();
+      }).catch(() => {
+        window.close();
+      });
+    });
+  }
 };
 window.RichConfirmDialog = RichConfirmDialog;
+window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'RichConfirmDialog';
 
-// For popup mode to initialize from query string
 if (location.search.includes('__RichConfirm__')) {
-  const searchParams = new URLSearchParams(location.search);
-  const uniqueKey = searchParams.get('uniqueKey');
-  const oneTimeKey = searchParams.get('oneTimeKey');
 
-  let params = {};
-  const paramsJson = searchParams.get('params');
-  if (paramsJson) {
-    try {
-      params = JSON.parse(paramsJson);
-    }
-    catch (error) {
-      console.error(error);
-    }
-  }
-
-  const dialog = new window.RichConfirmDialog({
-    ...params,
-    uniqueKey,
-    popup: true
-  });
-  
-  // Wire communication internally or trust window.opener / browser.runtime
-  // We'll trust browser.runtime.sendMessage to notify completion
-  dialog.show().then(result => {
-    browser.runtime.sendMessage({
-      type: 'rich-confirm-dialog-complete',
-      uniqueKey,
-      oneTimeKey,
-      result
-    }).then(() => {
-      window.close();
-    }).catch(() => {
-      window.close();
-    });
-  });
+  window.addEventListener('DOMContentLoaded', () => {
+    window[window.RICH_CONFIRM_DIALOG_CLASS_NAME].onLoaded();
+  }, { once: true });
 }
