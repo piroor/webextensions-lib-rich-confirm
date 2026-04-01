@@ -22,7 +22,7 @@ class RichConfirm {
         this.dialogJsPath = currentSrc.replace(/RichConfirm\.js$/, 'RichConfirmDialog.js');
         this.dialogHtmlPath = currentSrc.replace(/RichConfirm\.js$/, 'RichConfirmDialog.html');
       } else {
-        throw new Error("RichConfirm is not initialized. Call RichConfirm.init() first.");
+        throw new Error('RichConfirm is not initialized. Call RichConfirm.init() first.');
       }
     }
 
@@ -52,7 +52,7 @@ class RichConfirm {
       tabId = (await browser.tabs.getCurrent()).id;
     }
     if (!this.dialogJsPath) {
-      throw new Error("RichConfirm is not initialized. Call RichConfirm.init() first.");
+      throw new Error('RichConfirm is not initialized. Call RichConfirm.init() first.');
     }
 
     let onMessage, onTabRemoved, onTabUpdated;
@@ -125,7 +125,7 @@ class RichConfirm {
     try {
       // Fetch the script code first to inject it
       const response = await fetch(this.dialogJsPath);
-      let codeToInject = await response.text();
+      const codeToInject = await response.text();
 
       if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
         await browser.tabs.executeScript(tabId, {
@@ -300,7 +300,7 @@ class RichConfirm {
     }
 
     if (!this.dialogHtmlPath)
-      throw new Error("RichConfirm is not initialized. Call RichConfirm.init() first.");
+      throw new Error('RichConfirm is not initialized. Call RichConfirm.init() first.');
 
     const uniqueKey = this.uniqueKey;
     const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
@@ -404,7 +404,7 @@ class RichConfirm {
         browser.windows.onRemoved.removeListener(onWindowClosed);
       
       if (win && !win.closed) {
-          browser.windows.remove(win.id).catch(()=>{});
+        browser.windows.remove(win.id).catch(()=>{});
       }
     }
   }

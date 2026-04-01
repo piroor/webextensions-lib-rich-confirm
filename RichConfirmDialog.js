@@ -1035,13 +1035,16 @@ if (location.search.includes('__RichConfirm__')) {
   const searchParams = new URLSearchParams(location.search);
   const uniqueKey = searchParams.get('uniqueKey');
   const oneTimeKey = searchParams.get('oneTimeKey');
-  
+
   let params = {};
   const paramsJson = searchParams.get('params');
   if (paramsJson) {
     try {
       params = JSON.parse(paramsJson);
-    } catch (e) { console.error(e); }
+    }
+    catch (error) {
+      console.error(error);
+    }
   }
 
   const dialog = new window.RichConfirmDialog({
@@ -1059,9 +1062,9 @@ if (location.search.includes('__RichConfirm__')) {
       oneTimeKey,
       result
     }).then(() => {
-       window.close();
+      window.close();
     }).catch(() => {
-       window.close();
+      window.close();
     });
   });
 }
