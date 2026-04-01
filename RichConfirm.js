@@ -323,8 +323,52 @@ class RichConfirm {
     simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
     simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
 
-    let onMessage, onWindowClosed, onTabClosed;
-    let win;
+    let onMessage;
+    const promisedResult = new Promise((resolve, _reject) => {
+      onMessage = (message, sender) => {
+        switch (message?.type) {
+          case DIALOG_READY_NOTIFICATION_TYPE:
+            tryRepositionDialogToCenterOfOwner({
+              ...message,
+              dialogWindowId: sender.tab.windowId,
+            });
+            break;
+
+          case 'rich-confirm-dialog-complete':
+            if (message?.uniqueKey == uniqueKey &&
+                message?.oneTimeKey == oneTimeKey) {
+              resolve(message.result);
+            }
+            break;
+        }
+      };
+      browser.runtime.onMessage.addListener(onMessage);
+    });
+
+    const win = await this._safeCreateWindow({
+      url:  dialogFullUrl,
+      type: 'popup',
+      ...simulatedSize,
+    });
+    // Due to a Firefox's bug we cannot open popup type window
+    // at specified position.
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
+    // Thus we need to move the window immediately after it is opened.
+    if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
+        win.top + win.height - (win.height / 2) <= ownerWin.top ||
+        win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
+        win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
+      // But, such a move will produce an annoying flash.
+      // So, I grudgingly accept the position of the dialog placed
+      // if the popup (partially or fully) covers the owner window.
+      browser.windows.update(win.id, {
+        top:  simulatedSize.top,
+        left: simulatedSize.left
+      });
+    }
+    const activeTab = win.tabs.find(tab => tab.active);
+
+    let onWindowClosed, onTabClosed;
     const promisedDismissed = new Promise((resolve, _reject) => {
       onWindowClosed = windowId => {
         if (win?.closed) {
@@ -359,49 +403,6 @@ class RichConfirm {
       browser.windows.onRemoved.addListener(onWindowClosed);
       browser.tabs.onRemoved.addListener(onTabClosed);
     });
-    const promisedResult = new Promise((resolve, _reject) => {
-      onMessage = (message, sender) => {
-        switch (message?.type) {
-          case DIALOG_READY_NOTIFICATION_TYPE:
-            tryRepositionDialogToCenterOfOwner({
-              ...message,
-              dialogWindowId: sender.tab.windowId,
-            });
-            break;
-
-          case 'rich-confirm-dialog-complete':
-            if (message?.uniqueKey == uniqueKey &&
-                message?.oneTimeKey == oneTimeKey) {
-              resolve(message.result);
-            }
-            break;
-        }
-      };
-      browser.runtime.onMessage.addListener(onMessage);
-    });
-
-    win = await this._safeCreateWindow({
-      url:  dialogFullUrl,
-      type: 'popup',
-      ...simulatedSize,
-    });
-    // Due to a Firefox's bug we cannot open popup type window
-    // at specified position.
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1271047
-    // Thus we need to move the window immediately after it is opened.
-    if (win.left + win.width - (win.width / 2) <= ownerWin.left ||
-        win.top + win.height - (win.height / 2) <= ownerWin.top ||
-        win.left + (win.width / 2) >= ownerWin.left + ownerWin.width ||
-        win.top + (win.height / 2) >= ownerWin.top + ownerWin.height) {
-      // But, such a move will produce an annoying flash.
-      // So, I grudgingly accept the position of the dialog placed
-      // if the popup (partially or fully) covers the owner window.
-      browser.windows.update(win.id, {
-        top:  simulatedSize.top,
-        left: simulatedSize.left
-      });
-    }
-    const activeTab = win.tabs.find(tab => tab.active);
 
     const onFocusChanged = async windowId => {
       if (!params.modal ||
