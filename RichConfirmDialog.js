@@ -67,13 +67,9 @@ class RichConfirmDialog {
     return this.RTL_LANGUAGES.has(lang);
   }
 
-  buildUI() {
-    if (this.ui)
-      return;
-    this.style = document.createElement('style');
-    this.style.setAttribute('type', 'text/css');
+  generateStyleDefinitions() {
     const common = `.${this.commonClass}`;
-    this.style.textContent = `
+    return `
       /* color scheme */
       ${common}.rich-confirm,
       :root${common} {
@@ -511,11 +507,9 @@ class RichConfirmDialog {
         border:  1px solid;
       }
     `;
-    document.head.appendChild(this.style);
+  }
 
-    const range = document.createRange();
-    range.selectNodeContents(document.body);
-    range.collapse(false);
+  generateUI() {
     const commonClass = [
       this.commonClass,
       this.params.popup ? 'popup-window' : '',
@@ -527,9 +521,8 @@ class RichConfirmDialog {
             '',
       this.isRTL ? 'rtl' : '',
     ].join(' ');
-    const uniqueId = `created-at-${Date.now()}-${Math.floor(Math.random() * Math.pow(2, 24))}`;
-    const fragment = range.createContextualFragment(`
-      <div class="rich-confirm ${commonClass} ${uniqueId}">
+    return `
+      <div class="rich-confirm ${commonClass} ${this.uniqueId}">
         <div class="rich-confirm-row ${commonClass}">
           <div class="rich-confirm-dialog ${commonClass}" role="dialog">
             <div class="rich-confirm-content ${commonClass}"></div>
@@ -542,10 +535,28 @@ class RichConfirmDialog {
           </div>
         </div>
       </div>
-    `);
+    `;
+  }
+
+  get uniqueId() {
+    return this.$uniqueId ||= `created-at-${Date.now()}-${Math.floor(Math.random() * Math.pow(2, 24))}`;
+  }
+
+  buildUI() {
+    if (this.ui)
+      return;
+    this.style = document.createElement('style');
+    this.style.setAttribute('type', 'text/css');
+    this.style.textContent = this.generateStyleDefinitions();
+    document.head.appendChild(this.style);
+
+    const range = document.createRange();
+    range.selectNodeContents(document.body);
+    range.collapse(false);
+    const fragment = range.createContextualFragment(this.generateUI());
     range.insertNode(fragment);
     range.detach();
-    this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${uniqueId}`);
+    this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
   }
 
   getNextFocusedNodeByAccesskey(key) {
