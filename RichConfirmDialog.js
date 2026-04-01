@@ -551,12 +551,7 @@ class RichConfirmDialog {
     this.style.textContent = this.generateStyleDefinitions();
     document.head.appendChild(this.style);
 
-    const range = document.createRange();
-    range.selectNodeContents(document.body);
-    range.collapse(false);
-    const fragment = range.createContextualFragment(this.generateUI());
-    range.insertNode(fragment);
-    range.detach();
+    document.body.insertAdjacentHTML('beforeend', this.generateUI());
     this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
   }
 
@@ -642,12 +637,7 @@ class RichConfirmDialog {
 
   /* async */updateContent({ content, message }) {
     if (content) {
-      const range = document.createRange();
-      range.selectNodeContents(this.content);
-      range.collapse(false);
-      const fragment = range.createContextualFragment(content);
-      range.insertNode(fragment);
-      range.detach();
+      this.content.insertAdjacentHTML('beforeend', content);
       for (const element of this.content.querySelectorAll('[accesskey]')) {
         this.updateAccessKey(element);
       }
