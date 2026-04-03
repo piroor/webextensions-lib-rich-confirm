@@ -42,6 +42,8 @@ class RichConfirm {
       await this.ensureDialogClassLoaded();
     }
     const confirm = new this.Dialog({
+      tab:       false,
+      popup:     false,
       ...params,
       uniqueKey: this.uniqueKey,
     });
@@ -53,13 +55,23 @@ class RichConfirm {
       params = tabId;
       tabId = (await browser.tabs.getCurrent()).id;
     }
-    if (!this.dialogJsPath) {
+    if (!this.dialogHtmlPath) {
       throw new Error('RichConfirm is not initialized. Call RichConfirm.init() first.');
     }
 
-    let onMessage, onTabRemoved, onTabUpdated;
+    let onMessage, onTabRemoved, onTabUpdated, onWindowClosed;
     const uniqueKey = this.uniqueKey;
-    const oneTimeKey = `popup-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
+    const oneTimeKey = `tab-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
+
+    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: true, popup: false, ...params}))}`;
+
+    const targetTabInfo = await browser.tabs.get(tabId).catch(() => null);
+    const targetWinId = targetTabInfo?.windowId;
+
+    const alphabets = 'abcdefghijklmnopqrstuvwxyz';
+    const prefix = alphabets[Math.floor(Math.random() * alphabets.length)];
+    const customElementName = `${prefix}-${Date.now()}-${Math.round(Math.random() * 65000)}`;
+
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, _sender) => {
         if (message?.uniqueKey != uniqueKey ||
@@ -67,50 +79,15 @@ class RichConfirm {
           return;
 
         switch (message.type) {
-          case 'rich-confirm-dialog-shown':
-            if (typeof params.onReady == 'function') {
-              try {
-                params.onReady({
-                  width:  message.dialogWidth,
-                  height: message.dialogHeight
-                });
-              }
-              catch(error) {
-                console.error(error);
-              }
-            }
-            if (typeof params.onDialogOpened == 'function') {
-              try {
-                params.onDialogOpened({
-                  close() {
-                    browser.tabs.sendMessage(tabId, {
-                      type: 'rich-confirm-dialog-close',
-                      uniqueKey,
-                      oneTimeKey,
-                    });
-                  },
-                  updateContent({ content, message }) {
-                    browser.tabs.sendMessage(tabId, {
-                      type: 'rich-confirm-dialog-update-content',
-                      uniqueKey,
-                      oneTimeKey,
-                      content,
-                      message,
-                    });
-                  },
-                });
-              }
-              catch(error) {
-                console.error(error);
-              }
-            }
-            break;
-
           case 'rich-confirm-dialog-complete':
             resolve(message.result);
             break;
         }
       };
+      browser.runtime.onMessage.addListener(onMessage);
+    });
+
+    const promisedDismissed = new Promise((resolve, _reject) => {
       onTabRemoved = (removedTabId, _removeInfo) => {
         if (removedTabId == tabId)
           resolve({ buttonIndex: -1 });
@@ -119,127 +96,58 @@ class RichConfirm {
         if (updatedTabId == tabId && changeInfo.status == 'loading')
           resolve({ buttonIndex: -1 });
       };
-      browser.runtime.onMessage.addListener(onMessage);
+      onWindowClosed = windowId => {
+        if (targetWinId && windowId == targetWinId)
+          resolve({ buttonIndex: -1 });
+      };
       browser.tabs.onRemoved.addListener(onTabRemoved);
       browser.tabs.onUpdated.addListener(onTabUpdated);
+      browser.windows.onRemoved.addListener(onWindowClosed);
     });
 
     try {
-      // Fetch the script code first to inject it
-      const response = await fetch(this.dialogJsPath);
-      const codeToInject = await response.text();
+      const run = function run(url, uniqueKey, oneTimeKey, customElementName) {
+        const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
+        window.__RichConfirm_Containers__ = window.__RichConfirm_Containers__ || new Map();
+        let container = window.__RichConfirm_Containers__.get(idKey);
+        if (!container) {
+          const type = window.__RichConfirm_ClosedContainerType__ || customElementName;
+          window.__RichConfirm_ClosedContainerType__ = type;
+          if (!window.customElements.get(type)) {
+            class RichConfirmContainer extends HTMLElement {}
+            window.customElements.define(type, RichConfirmContainer);
+          }
+
+          container = document.createElement(type);
+          container.setAttribute('style', 'background: transparent; border: 0 none; bottom: 0; color-scheme: light dark; height: 100%; left: 0; position: fixed; right: 0; top: 0; width: 100%; z-index: 2147483647;');
+
+          const shadow = container.attachShadow({ mode: 'closed' });
+          const iframe = document.createElement('iframe');
+          iframe.setAttribute('style', 'background: transparent; border: 0 none; height: 100%; width: 100%;');
+          iframe.src = url;
+          shadow.appendChild(iframe);
+
+          (document.body || document.documentElement).appendChild(container);
+          window.__RichConfirm_Containers__.set(idKey, container);
+        }
+      };
 
       if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
         await browser.tabs.executeScript(tabId, {
-          code: codeToInject,
+          code: `(${run.toString()})(${JSON.stringify(dialogFullUrl)}, ${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)}, ${JSON.stringify(customElementName)});`,
           matchAboutBlank: true,
-          runAt:           'document_start'
+          runAt:           'document_end'
         });
       }
       else { // Manifest V3
         await browser.scripting.executeScript({
           target: { tabId },
-          func: (codeStr) => {
-            if (!this.Dialog) {
-              const script = document.createElement('script');
-              script.textContent = codeStr;
-              (document.head || document.documentElement).appendChild(script);
-              script.remove();
-            }
-          },
-          args: [codeToInject]
-        });
-      }
-
-      const transferableParams = { ...params };
-      const injectTransferable = [];
-      const inject = params.inject || {};
-      delete transferableParams.inject;
-      for (const key in params.inject) {
-        const value = inject[key];
-        const transferable = (
-          value &&
-          typeof value == 'function' &&
-          typeof value.toString == 'function'
-        ) ? value.toString() : JSON.stringify(value);
-        injectTransferable.push(`${JSON.stringify(key)} : ${transferable}`);
-      }
-
-      const run = async function run(uniqueKey, oneTimeKey, transferableParams, inject) {
-        delete this.Dialog.result; // clean up old result if any
-        const confirm = new this.Dialog({
-          ...transferableParams,
-          uniqueKey,
-          inject: inject || {},
-          tab:    true,
-        });
-        const onMessage = (message, _sender) => {
-          if (message?.uniqueKey != uniqueKey ||
-              message?.oneTimeKey != oneTimeKey) {
-            return;
-          }
-          switch (message?.type) {
-            case 'rich-confirm-dialog-close':
-              confirm.hide();
-              break;
-
-            case 'rich-confirm-dialog-update-content':
-              confirm.updateContent(message);
-              break;
-          }
-        }
-        browser.runtime.onMessage.addListener(onMessage);
-        try {
-          confirm.onShown = async (content, _injected) => {
-            const dialog = content.parentNode;
-            const rect   = dialog.getBoundingClientRect();
-            const style  = window.getComputedStyle(dialog, null);
-            // End padding is not included in the scrillable size,
-            // so we manually add them.
-            const inlineEndPadding  = dialog.scrollLeftMax > 0 && parseFloat(style.getPropertyValue('padding-inline-end')) || 0;
-            const bottomPadding = dialog.scrollTopMax > 0 && parseFloat(style.getPropertyValue('padding-bottom')) || 0;
-            browser.runtime.sendMessage({
-              type:         'rich-confirm-dialog-shown',
-              uniqueKey,
-              oneTimeKey,
-              dialogWidth:  rect.width + dialog.scrollLeftMax + inlineEndPadding,
-              dialogHeight: rect.height + dialog.scrollTopMax + bottomPadding
-            });
-          };
-          const result = await confirm.show();
-          browser.runtime.sendMessage({
-            type:      'rich-confirm-dialog-complete',
-            uniqueKey,
-            oneTimeKey,
-            result
-          });
-        }
-        finally {
-          browser.runtime.onMessage.removeListener(onMessage);
-        }
-      };
-
-      if (typeof browser.tabs.executeScript == 'function') // Manifest V2
-        browser.tabs.executeScript(tabId, {
-          code: `
-            (${run.toString()})(
-              ${JSON.stringify(this.uniqueKey)},
-              ${JSON.stringify(oneTimeKey)},
-              ${JSON.stringify(transferableParams)},
-              {${injectTransferable.join(',')}}
-            );
-          `,
-          matchAboutBlank: true,
-          runAt:           'document_start'
-        });
-      else // Manifest V3
-        browser.scripting.executeScript({
-          target: { tabId },
           func: run,
-          args: [this.uniqueKey, oneTimeKey, transferableParams, inject],
+          args: [dialogFullUrl, uniqueKey, oneTimeKey, customElementName]
         });
+      }
 
-      const result = await promisedResult;
+      const result = await Promise.race([promisedResult, promisedDismissed]);
       return result;
     }
     catch(error) {
@@ -255,6 +163,35 @@ class RichConfirm {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
       if (browser.tabs.onUpdated.hasListener(onTabUpdated))
         browser.tabs.onUpdated.removeListener(onTabUpdated);
+      if (browser.windows.onRemoved.hasListener(onWindowClosed))
+        browser.windows.onRemoved.removeListener(onWindowClosed);
+
+      const cleanup = function(uniqueKey, oneTimeKey) {
+        const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
+        const map = window.__RichConfirm_Containers__;
+        if (map) {
+          const container = map.get(idKey);
+          if (container) {
+            container.remove();
+            map.delete(idKey);
+          }
+        }
+      };
+
+      if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+        browser.tabs.executeScript(tabId, {
+          code: `(${cleanup.toString()})(${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)});`,
+          matchAboutBlank: true,
+          runAt:           'document_end'
+        }).catch(() => {});
+      }
+      else { // Manifest V3
+        browser.scripting.executeScript({
+          target: { tabId },
+          func: cleanup,
+          args: [uniqueKey, oneTimeKey]
+        }).catch(() => {});
+      }
     }
   }
 
@@ -291,10 +228,10 @@ class RichConfirm {
     // on macOS, a popup window opened from a fullscreen browser window is always
     // opened as a new fullscreen window, thus we need to fallback to a workaround.
     if (openInTab) {
-      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: true, popup: false}))}`;
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: true, popup: false, ...params, ownerWindowId: ownerWin.id}))}`;
     }
     else {
-      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id}))}`;
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: false, popup: true, ...params, ownerWindowId: ownerWin.id}))}`;
 
       const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
       const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
@@ -304,9 +241,10 @@ class RichConfirm {
         await this.ensureDialogClassLoaded();
       }
       const simulation = new this.Dialog({
+        tab:        false,
+        popup:      true,
         ...params,
         uniqueKey,
-        popup:      true,
         simulation: true,
       });
       simulation.buildUI();
