@@ -153,7 +153,6 @@ If you want to show the confirmation dialog as a popup window, call `RichConfirm
 ```javascript
 var result = await RichConfirm.showInPopup(10, {
   modal:        true, // optional (default=false)
-  url:          '/path/to/your/addon/file.html', // required on Firefox ESR68
   title:        'Are you ready?', // optional (default="")
   message:      'Are you ready?',
   buttons:      ['Yes', 'No'],
@@ -165,14 +164,6 @@ var result = await RichConfirm.showInPopup(10, {
 The first parameter is `windows.Window.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will be placed on the last focused window.
 
 If your extension has `<all_urls>` permission, the dialog window/tab is initially opened with `about:blank` and its contents are injected into it. This prevents the dialog from being restored unexpectedly by the browser's "Restore closed tabs/windows" feature (like Ctrl-Shift-T on Firefox 116 and later).
-
-The `url` parameter is required on ESR68, [otherwise the popup will become blank](https://github.com/piroor/treestyletab/issues/2564). You just need to put any HTML file under your addon's namespace, so the minimum example is:
-
-```html
-<!DOCTYPE html>
-```
-
-*Please note that this is due to restrictions on exact version ESR68. It is recommended to not specify such a custom blank page if you don't need to support old versions of Firefox including ESR68.*
 
 When using `RichConfirm.showInPopup()`, the dialog class methods like `onShown()` and `hide()` will be called twice per one call. Due to some restrictions (including [the bug 1271047](https://bugzilla.mozilla.org/show_bug.cgi?id=1271047)) we cannot determine the size of the popup before it is actually rendered, so this library tries to render the dialog silently and invisibly at first, and opens the real popup window with the determined size. If you want some operations to be skipped on the first try, you can determine if it is in the simulation (first try) with `this.params.simulation` in your custom dialog class:
 
