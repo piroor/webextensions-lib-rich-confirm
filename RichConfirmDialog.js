@@ -523,7 +523,7 @@ class RichConfirmDialog {
       this.isRTL ? 'rtl' : '',
     ].join(' ');
     return `
-      <div class="rich-confirm ${commonClass} ${this.uniqueId}">
+      <div class="rich-confirm ${commonClass} ${this.uniqueId}" title="${commonClass}">
         <div class="rich-confirm-row ${commonClass}">
           <div class="rich-confirm-dialog ${commonClass}" role="dialog">
             <div class="rich-confirm-content ${commonClass}"></div>
@@ -657,9 +657,9 @@ class RichConfirmDialog {
       return onShown.call(this, ...params);
     };
   }
-  async $onShown(container, injected) {
+  async $onShown(container) {
     // override me!
-    console.log('onShown: ', { container, injected });
+    console.log('onShown: ', { container });
   }
 
   get onDialogOpened() {
@@ -721,7 +721,7 @@ class RichConfirmDialog {
     this.ui.classList.add('show');
 
     try {
-      await this.onShown(this.content, this.params.inject || {});
+      await this.onShown(this.content);
     }
     catch(error) {
       console.error(error);
@@ -769,7 +769,7 @@ class RichConfirmDialog {
     this.ui.classList.remove('show');
     if (typeof this.params.onHidden == 'function') {
       try {
-        this.params.onHidden(this.content, this.params.inject || {});
+        this.params.onHidden(this.content);
       }
       catch(_error) {
       }
@@ -1044,6 +1044,18 @@ class RichConfirmDialog {
       uniqueKey,
     });
 
+    // We should use dialog.params instead of params because params may be
+    // updated by the dialog implementation itself.
+    if (typeof dialog.params.title == 'string') {
+      document.title = dialog.params.title;
+      browser.runtime.sendMessage({
+        type:  'rich-confirm-set-dialog-title',
+        uniqueKey,
+        oneTimeKey,
+        title: dialog.params.title,
+      });
+    }
+
     // Wire communication internally or trust window.opener / browser.runtime
     // We'll trust browser.runtime.sendMessage to notify completion
     dialog.show().then(result => {
@@ -1051,7 +1063,7 @@ class RichConfirmDialog {
         type: 'rich-confirm-dialog-complete',
         uniqueKey,
         oneTimeKey,
-        result
+        result,
       }).then(() => {
         window.close();
       }).catch(() => {

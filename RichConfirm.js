@@ -50,6 +50,109 @@ class RichConfirm {
     return confirm.show();
   }
 
+  static async _injectDialog(tabId, { url, title, uniqueKey, oneTimeKey }) {
+    const alphabets = 'abcdefghijklmnopqrstuvwxyz';
+    const prefix = alphabets[Math.floor(Math.random() * alphabets.length)];
+    const customElementName = `${prefix}-${Date.now()}-${Math.round(Math.random() * 65000)}`;
+
+    const run = function run(url, title, uniqueKey, oneTimeKey, customElementName) {
+      const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
+      window.$$RichConfirm_Containers = window.$$RichConfirm_Containers || new Map();
+      let container = window.$$RichConfirm_Containers.get(idKey);
+      if (!container) {
+        const type = window.$$RichConfirm_ClosedContainerType || customElementName;
+        window.$$RichConfirm_ClosedContainerType = type;
+        if (!window.customElements.get(type)) {
+          class RichConfirmContainer extends HTMLElement {}
+          window.customElements.define(type, RichConfirmContainer);
+        }
+
+        container = document.createElement(type);
+        container.setAttribute('style', 'background: transparent; border: 0 none; bottom: 0; color-scheme: light dark; height: 100%; left: 0; position: fixed; right: 0; top: 0; width: 100%; z-index: 2147483647;');
+
+        const shadow = container.attachShadow({ mode: 'closed' });
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('style', 'background: transparent; border: 0 none; height: 100%; width: 100%;');
+        iframe.src = url;
+        shadow.appendChild(iframe);
+
+        (document.body || document.documentElement).appendChild(container);
+        window.$$RichConfirm_Containers.set(idKey, container);
+      }
+
+      if (typeof title == 'string')
+        document.title = title;
+    };
+
+    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+      await browser.tabs.executeScript(tabId, {
+        code: `(${run.toString()})(${JSON.stringify(url)}, ${JSON.stringify(title)}, ${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)}, ${JSON.stringify(customElementName)});`,
+        matchAboutBlank: true,
+        runAt:           'document_end'
+      });
+    }
+    else { // Manifest V3
+      await browser.scripting.executeScript({
+        target: { tabId },
+        func: run,
+        args: [url, title, uniqueKey, oneTimeKey, customElementName]
+      });
+    }
+  }
+
+  static async _setTitle(tabId, title) {
+    if (typeof title != 'string')
+      return;
+
+    const run = function run(title) {
+      document.title = title;
+    };
+
+    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+      await browser.tabs.executeScript(tabId, {
+        code: `(${run.toString()})(${JSON.stringify(title)});`,
+        matchAboutBlank: true,
+        runAt:           'document_end'
+      });
+    }
+    else { // Manifest V3
+      await browser.scripting.executeScript({
+        target: { tabId },
+        func: run,
+        args: [title]
+      });
+    }
+  }
+
+  static _cleanupDialog(tabId, { uniqueKey, oneTimeKey }) {
+    const cleanup = function(uniqueKey, oneTimeKey) {
+      const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
+      const map = window.$$RichConfirm_Containers;
+      if (map) {
+        const container = map.get(idKey);
+        if (container) {
+          container.remove();
+          map.delete(idKey);
+        }
+      }
+    };
+
+    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+      browser.tabs.executeScript(tabId, {
+        code: `(${cleanup.toString()})(${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)});`,
+        matchAboutBlank: true,
+        runAt:           'document_end'
+      }).catch(() => {});
+    }
+    else { // Manifest V3
+      browser.scripting.executeScript({
+        target: { tabId },
+        func: cleanup,
+        args: [uniqueKey, oneTimeKey]
+      }).catch(() => {});
+    }
+  }
+
   static async showInTab(tabId, params) {
     if (!params) {
       params = tabId;
@@ -63,14 +166,10 @@ class RichConfirm {
     const uniqueKey = this.uniqueKey;
     const oneTimeKey = `tab-${uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`;
 
-    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: true, popup: false, ...params}))}`;
+    const dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, tab: true, popup: false}))}`;
 
     const targetTabInfo = await browser.tabs.get(tabId).catch(() => null);
     const targetWinId = targetTabInfo?.windowId;
-
-    const alphabets = 'abcdefghijklmnopqrstuvwxyz';
-    const prefix = alphabets[Math.floor(Math.random() * alphabets.length)];
-    const customElementName = `${prefix}-${Date.now()}-${Math.round(Math.random() * 65000)}`;
 
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, _sender) => {
@@ -106,46 +205,11 @@ class RichConfirm {
     });
 
     try {
-      const run = function run(url, uniqueKey, oneTimeKey, customElementName) {
-        const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
-        window.$$RichConfirm_Containers = window.$$RichConfirm_Containers || new Map();
-        let container = window.$$RichConfirm_Containers.get(idKey);
-        if (!container) {
-          const type = window.$$RichConfirm_ClosedContainerType || customElementName;
-          window.$$RichConfirm_ClosedContainerType = type;
-          if (!window.customElements.get(type)) {
-            class RichConfirmContainer extends HTMLElement {}
-            window.customElements.define(type, RichConfirmContainer);
-          }
-
-          container = document.createElement(type);
-          container.setAttribute('style', 'background: transparent; border: 0 none; bottom: 0; color-scheme: light dark; height: 100%; left: 0; position: fixed; right: 0; top: 0; width: 100%; z-index: 2147483647;');
-
-          const shadow = container.attachShadow({ mode: 'closed' });
-          const iframe = document.createElement('iframe');
-          iframe.setAttribute('style', 'background: transparent; border: 0 none; height: 100%; width: 100%;');
-          iframe.src = url;
-          shadow.appendChild(iframe);
-
-          (document.body || document.documentElement).appendChild(container);
-          window.$$RichConfirm_Containers.set(idKey, container);
-        }
-      };
-
-      if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-        await browser.tabs.executeScript(tabId, {
-          code: `(${run.toString()})(${JSON.stringify(dialogFullUrl)}, ${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)}, ${JSON.stringify(customElementName)});`,
-          matchAboutBlank: true,
-          runAt:           'document_end'
-        });
-      }
-      else { // Manifest V3
-        await browser.scripting.executeScript({
-          target: { tabId },
-          func: run,
-          args: [dialogFullUrl, uniqueKey, oneTimeKey, customElementName]
-        });
-      }
+      await this._injectDialog(tabId, {
+        url: dialogFullUrl,
+        uniqueKey,
+        oneTimeKey,
+      });
 
       const result = await Promise.race([promisedResult, promisedDismissed]);
       return result;
@@ -166,32 +230,7 @@ class RichConfirm {
       if (browser.windows.onRemoved.hasListener(onWindowClosed))
         browser.windows.onRemoved.removeListener(onWindowClosed);
 
-      const cleanup = function(uniqueKey, oneTimeKey) {
-        const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
-        const map = window.$$RichConfirm_Containers;
-        if (map) {
-          const container = map.get(idKey);
-          if (container) {
-            container.remove();
-            map.delete(idKey);
-          }
-        }
-      };
-
-      if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-        browser.tabs.executeScript(tabId, {
-          code: `(${cleanup.toString()})(${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)});`,
-          matchAboutBlank: true,
-          runAt:           'document_end'
-        }).catch(() => {});
-      }
-      else { // Manifest V3
-        browser.scripting.executeScript({
-          target: { tabId },
-          func: cleanup,
-          args: [uniqueKey, oneTimeKey]
-        }).catch(() => {});
-      }
+      this._cleanupDialog(tabId, { uniqueKey, oneTimeKey });
     }
   }
 
@@ -228,10 +267,10 @@ class RichConfirm {
     // on macOS, a popup window opened from a fullscreen browser window is always
     // opened as a new fullscreen window, thus we need to fallback to a workaround.
     if (openInTab) {
-      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: true, popup: false, ...params, ownerWindowId: ownerWin.id}))}`;
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: true, popup: false}))}`;
     }
     else {
-      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({tab: false, popup: true, ...params, ownerWindowId: ownerWin.id}))}`;
+      dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: false, popup: true}))}`;
 
       const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
       const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
@@ -273,7 +312,9 @@ class RichConfirm {
       simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
     }
 
-    let onMessage;
+    const playgroundUrl = params.useBlank ? 'about:blank' : dialogFullUrl;
+
+    let playgroundTab, onMessage;
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, sender) => {
         switch (message?.type) {
@@ -290,12 +331,16 @@ class RichConfirm {
               resolve(message.result);
             }
             break;
+
+          case 'rich-confirm-set-dialog-title':
+            this._setTitle(playgroundTab.id, message.title);
+            break;
         }
       };
       browser.runtime.onMessage.addListener(onMessage);
     });
 
-    let canvasTab, win;
+    let win;
     if (openInTab) {
       win = ownerWin;
       await Promise.race([
@@ -303,18 +348,23 @@ class RichConfirm {
           let onUpdated;
           return  new Promise(async (resolve, _reject) => {
             onUpdated = (tabId, changes, tab) => {
-              if (tabId != canvasTab?.id ||
+              if (tabId != playgroundTab?.id ||
                   changes.status != 'complete' ||
-                  tab.url != dialogFullUrl)
+                  tab.url != playgroundUrl)
                 return;
               resolve();
             };
             browser.tabs.onUpdated.addListener(onUpdated);
-            canvasTab = await browser.tabs.create({
+            playgroundTab = await browser.tabs.create({
               windowId: ownerWin.id,
-              url:      dialogFullUrl,
+              url:      playgroundUrl,
               active:   true
             });
+            if (params.useBlank) {
+              browser.tabs.get(playgroundTab.id).then(currentTab => {
+                if (currentTab?.status == 'complete') resolve();
+              }).catch(() => {});
+            }
           })
             .finally(() => {
               browser.tabs.onUpdated.removeListener(onUpdated);
@@ -325,7 +375,7 @@ class RichConfirm {
     }
     else {
       win = await this._safeCreateWindow({
-        url:  dialogFullUrl,
+        url:  playgroundUrl,
         type: 'popup',
         ...simulatedSize,
       });
@@ -345,7 +395,18 @@ class RichConfirm {
           left: simulatedSize.left
         });
       }
-      canvasTab = win.tabs.find(tab => tab.active);
+      playgroundTab = win.tabs.find(tab => tab.active);
+    }
+
+    if (params.useBlank) {
+      await Promise.all([
+        this._injectDialog(playgroundTab.id, {
+          url: dialogFullUrl,
+          uniqueKey,
+          oneTimeKey,
+        }),
+        this._setTitle(playgroundTab.id, params.title),
+      ]);
     }
 
     let onWindowClosed, onTabClosed;
@@ -381,7 +442,7 @@ class RichConfirm {
             break;
 
           default:
-            if (tabId == canvasTab.id)
+            if (tabId == playgroundTab.id)
               resolve({ buttonIndex: -1 });
             break;
         }
@@ -431,21 +492,21 @@ class RichConfirm {
         // A window/tab closed with a blank page won't appear
         // in the "Recently Closed Windows/Tabs" list.
         const onTabUpdated = (tabId, changeInfo, tab) => {
-          if (tabId != canvasTab.id ||
+          if (tabId != playgroundTab.id ||
               tab.url != 'about:blank' ||
               changeInfo.status == 'loading')
             return;
           browser.tabs.onUpdated.removeListener(onTabUpdated);
           if (openInTab)
-            browser.tabs.remove(canvasTab.id);
+            browser.tabs.remove(playgroundTab.id);
           else
             browser.windows.remove(win.id).catch(()=>{});
         };
         browser.tabs.onUpdated.addListener(onTabUpdated);
-        browser.tabs.update(canvasTab.id, { url: 'about:blank' });
+        browser.tabs.update(playgroundTab.id, { url: 'about:blank' });
         */
         if (openInTab)
-          browser.tabs.remove(canvasTab.id);
+          browser.tabs.remove(playgroundTab.id);
         else
           browser.windows.remove(win.id).catch(()=>{});
       }
