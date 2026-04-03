@@ -152,7 +152,6 @@ If you want to show the confirmation dialog as a popup window, call `RichConfirm
 
 ```javascript
 var result = await RichConfirm.showInPopup(10, {
-  useBlank:     true, // optional (default=false)
   modal:        true, // optional (default=false)
   url:          '/path/to/your/addon/file.html', // required on Firefox ESR68
   title:        'Are you ready?', // optional (default="")
@@ -165,7 +164,7 @@ var result = await RichConfirm.showInPopup(10, {
 
 The first parameter is `windows.Window.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will be placed on the last focused window.
 
-If you pass `useBlank: true` in the parameters, the dialog window/tab is initially opened with `about:blank` and its contents are injected into it. This prevents the dialog from being restored unexpectedly by the browser's "Restore closed tabs/windows" feature (like Ctrl-Shift-T on Firefox 116 and later).
+If your extension has `<all_urls>` permission, the dialog window/tab is initially opened with `about:blank` and its contents are injected into it. This prevents the dialog from being restored unexpectedly by the browser's "Restore closed tabs/windows" feature (like Ctrl-Shift-T on Firefox 116 and later).
 
 The `url` parameter is required on ESR68, [otherwise the popup will become blank](https://github.com/piroor/treestyletab/issues/2564). You just need to put any HTML file under your addon's namespace, so the minimum example is:
 
