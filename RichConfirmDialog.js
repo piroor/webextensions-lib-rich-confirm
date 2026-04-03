@@ -8,12 +8,14 @@
 class RichConfirmDialog {
   constructor(params) {
     this.uniqueKey = params.uniqueKey || 'default';
+    this.oneTimeKey = params.oneTimeKey || 'default';
     this.DIALOG_READY_NOTIFICATION_TYPE = `__RichConfirm_${this.uniqueKey}__confirmation-dialog-ready`;
 
     this.params = params;
     if (!this.params.buttons)
       this.params.buttons = ['OK'];
 
+    this.onMessage     = this.onMessage.bind(this);
     this.onClick       = this.onClick.bind(this);
     this.onKeyDown     = this.onKeyDown.bind(this);
     this.onKeyUp       = this.onKeyUp.bind(this);
@@ -652,11 +654,6 @@ class RichConfirmDialog {
     console.log('onShown: ', { container });
   }
 
-  async onDialogOpened({ close, updateContent }) {
-    // override me!
-    console.log('onDialogOpened: ', { close, updateContent });
-  }
-
   async show() {
     this.buildUI();
     await new Promise((resolve, _reject) => setTimeout(resolve, 0));
@@ -685,6 +682,8 @@ class RichConfirmDialog {
     }
     range.insertNode(buttons);
 
+    browser.runtime.onMessage.addListener(this.onMessage);
+
     this.ui.addEventListener('click', this.onClick);
     window.addEventListener('keydown', this.onKeyDown, true);
     window.addEventListener('keyup', this.onKeyUp, true);
@@ -702,20 +701,6 @@ class RichConfirmDialog {
 
     try {
       await this.onShown(this.content);
-    }
-    catch(error) {
-      console.error(error);
-    }
-
-    try {
-      await this.onDialogOpened({
-        close: () => {
-          this.hide();
-        },
-        updateContent: ({ content, message }) => {
-          this.updateContent({ content, message });
-        },
-      });
     }
     catch(error) {
       console.error(error);
@@ -754,6 +739,7 @@ class RichConfirmDialog {
       catch(_error) {
       }
     }
+    browser.runtime.onMessage.removeListener(this.onMessage);
     this.ui.removeEventListener('click', this.onClick);
     window.removeEventListener('keydown', this.onKeyDown, true);
     window.removeEventListener('keyup', this.onKeyUp, true);
@@ -783,6 +769,20 @@ class RichConfirmDialog {
       checked: !!this.params.checkMessage && this.checkCheckbox.checked
     };
     return this.hide().then(() => resolve(result));
+  }
+
+  onMessage(message, _sender) {
+    if (message?.uniqueKey != this.uniqueKey ||
+        message?.oneTimeKey != this.oneTimeKey)
+      return;
+
+    switch (message?.type) {
+      case 'rich-confirm-update-content':
+        return this.updateContent(message);
+
+      case 'rich-confirm-close':
+        return this.hide();
+    }
   }
 
   onClick(event) {
@@ -1026,6 +1026,7 @@ class RichConfirmDialog {
     const dialog = new this({
       ...params,
       uniqueKey,
+      oneTimeKey,
     });
 
     // We should use dialog.params instead of params because params may be

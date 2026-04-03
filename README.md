@@ -191,43 +191,21 @@ export default class CustomConfirmDialog extends RichConfirmDialog {
 
 ## Control confirmation dialog from outside
 
-Methods to show a confirmation dialog can be controlled from outside of the flow. To do this, override the `onDialogOpened` method in your custom dialog class, where you receive an object having `close` and `updateContent` methods.
-Since the dialog may be running in a separate context from the background script, you might need to use `browser.runtime.onMessage` to communicate with it, like following:
+A confirmation dialog can be controlled from outside of the flow. To do this, give a callback function after the parameters, where you receive an object having `close` and `updateContent` methods.
+Since the dialog may be running in a separate context from the background script, you might call closer and updater methods, like following:
 
 ```javascript
-import RichConfirmDialog from './RichConfirmDialog.js';
+let closer, updater;
 
-export default class CustomConfirmDialog extends RichConfirmDialog {
-  async onDialogOpened({ close, updateContent }) {
-    this.onMessage = (message) => {
-      if (message.type === 'update-progress') {
-        updateContent({
-          // the updater function accepts `content` and `message` parameters same to the dialog itself.
-          message: message.percentage + '% saved...',
-        });
-      }
-      else if (message.type === 'cancel') {
-        close();
-      }
-    };
-    browser.runtime.onMessage.addListener(this.onMessage);
-  }
-
-  async hide() {
-    if (this.onMessage) {
-      browser.runtime.onMessage.removeListener(this.onMessage);
-    }
-    return super.hide();
-  }
-}
-```
-
-```javascript
 // In background script or other contexts:
 async function doWithConfirmation() {
-  var result = await RichConfirm.showInPopup(10, {
-    // ...
-  });
+  var result = await RichConfirm.showInPopup(
+    { /* params */ },
+    ({ close, updateContent }) => {
+      closer = close;
+      updater = updateContent;
+    }
+  );
   if (result.buttonIndex == 0) {
     // something critical operations
   }
@@ -237,15 +215,15 @@ doWithConfirmation();
 
 saveFileInBackground({
   onProgress(percentage) {
-    browser.runtime.sendMessage({
-      type: 'update-progress',
-      percentage: percentage,
+    updater({
+      // the updater function accepts `content` and `message` parameters same to the dialog itself.
+      message: message.percentage + '% saved...',
     });
   },
 });
 
 setTimeout(() => {
   // cancel the confirmation after 30 seconds
-  browser.runtime.sendMessage({ type: 'cancel' });
+  closer();
 }, 30000);
 ```

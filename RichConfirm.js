@@ -37,16 +37,27 @@ class RichConfirm {
     return `__RichConfirm_${this.uniqueKey}__confirmation-dialog-ready`;
   }
 
-  static async show(params) {
+  static async show(params, asyncCallback = null) {
     if (!this.Dialog) {
       await this.ensureDialogClassLoaded();
     }
     const confirm = new this.Dialog({
-      tab:       false,
-      popup:     false,
+      tab:        false,
+      popup:      false,
       ...params,
-      uniqueKey: this.uniqueKey,
+      uniqueKey:  this.uniqueKey,
+      oneTimeKey: `inline-${this.uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`,
     });
+    if (typeof asyncCallback == 'function') {
+      asyncCallback({
+        close: () => {
+          confirm.hide();
+        },
+        updateContent: ({ content, message }) => {
+          confirm.updateContent({ content, message });
+        },
+      });
+    }
     return confirm.show();
   }
 
@@ -131,8 +142,9 @@ class RichConfirm {
     }, uniqueKey, oneTimeKey);
   }
 
-  static async showInTab(tabId, params) {
-    if (!params) {
+  static async showInTab(tabId, params, asyncCallback = null) {
+    if (typeof tabId != 'number') {
+      asyncCallback = params;
       params = tabId;
       tabId = (await browser.tabs.getCurrent()).id;
     }
@@ -189,6 +201,27 @@ class RichConfirm {
         oneTimeKey,
       });
 
+      if (typeof asyncCallback == 'function') {
+        asyncCallback({
+          close: () => {
+            browser.runtime.sendMessage({
+              type: 'rich-confirm-close',
+              uniqueKey,
+              oneTimeKey,
+            });
+          },
+          updateContent: ({ content, message }) => {
+            browser.runtime.sendMessage({
+              type: 'rich-confirm-update-content',
+              uniqueKey,
+              oneTimeKey,
+              content,
+              message,
+            });
+          },
+        });
+      }
+
       const result = await Promise.race([promisedResult, promisedDismissed]);
       return result;
     }
@@ -212,7 +245,7 @@ class RichConfirm {
     }
   }
 
-  static async showInPopup(ownerWinId, params) {
+  static async showInPopup(ownerWinId, params, asyncCallback = null) {
     let ownerWin;
     const [shouldPreventRestoration] = await Promise.all([
       (async () => {
@@ -224,7 +257,8 @@ class RichConfirm {
         return false;
       })(),
       (async () => {
-        if (!params) {
+        if (typeof ownerWinId != 'number') {
+          asyncCallback = params;
           params = ownerWinId;
           ownerWin = await browser.windows.getLastFocused({});
         }
@@ -467,6 +501,27 @@ class RichConfirm {
       browser.windows.update(win.id, { focused: true });
     };
     browser.windows.onFocusChanged.addListener(onFocusChanged);
+
+    if (typeof asyncCallback == 'function') {
+      asyncCallback({
+        close: () => {
+          browser.runtime.sendMessage({
+            type: 'rich-confirm-close',
+            uniqueKey,
+            oneTimeKey,
+          });
+        },
+        updateContent: ({ content, message }) => {
+          browser.runtime.sendMessage({
+            type: 'rich-confirm-update-content',
+            uniqueKey,
+            oneTimeKey,
+            content,
+            message,
+          });
+        },
+      });
+    }
 
     try {
       return await Promise.race([promisedResult, promisedDismissed]);
