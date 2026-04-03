@@ -50,12 +50,29 @@ class RichConfirm {
     return confirm.show();
   }
 
+  static async _runInTab(tabId, func, ...args) {
+    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+      await browser.tabs.executeScript(tabId, {
+        code: `(${func.toString()})(...${JSON.stringify(args)});`,
+        matchAboutBlank: true,
+        runAt:           'document_end'
+      });
+    }
+    else { // Manifest V3
+      await browser.scripting.executeScript({
+        target: { tabId },
+        func,
+        args,
+      });
+    }
+  }
+
   static async _injectDialog(tabId, { url, title, uniqueKey, oneTimeKey }) {
     const alphabets = 'abcdefghijklmnopqrstuvwxyz';
     const prefix = alphabets[Math.floor(Math.random() * alphabets.length)];
     const customElementName = `${prefix}-${Date.now()}-${Math.round(Math.random() * 65000)}`;
 
-    const run = function run(url, title, uniqueKey, oneTimeKey, customElementName) {
+    await this._runInTab(tabId, (url, title, uniqueKey, oneTimeKey, customElementName) => {
       const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
       window.$$RichConfirm_Containers = window.$$RichConfirm_Containers || new Map();
       let container = window.$$RichConfirm_Containers.get(idKey);
@@ -82,50 +99,26 @@ class RichConfirm {
 
       if (typeof title == 'string')
         document.title = title;
-    };
+    }, url, title, uniqueKey, oneTimeKey, customElementName);
+  }
 
-    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-      await browser.tabs.executeScript(tabId, {
-        code: `(${run.toString()})(${JSON.stringify(url)}, ${JSON.stringify(title)}, ${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)}, ${JSON.stringify(customElementName)});`,
-        matchAboutBlank: true,
-        runAt:           'document_end'
-      });
-    }
-    else { // Manifest V3
-      await browser.scripting.executeScript({
-        target: { tabId },
-        func: run,
-        args: [url, title, uniqueKey, oneTimeKey, customElementName]
-      });
-    }
+  static async _clearPermissionNote(tabId) {
+    return this._runInTab(tabId, () => {
+      document.querySelector('#permissionNote')?.remove();
+    });
   }
 
   static async _setTitle(tabId, title) {
     if (typeof title != 'string')
       return;
 
-    const run = function run(title) {
+    return this._runInTab(tabId, (title) => {
       document.title = title;
-    };
-
-    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-      await browser.tabs.executeScript(tabId, {
-        code: `(${run.toString()})(${JSON.stringify(title)});`,
-        matchAboutBlank: true,
-        runAt:           'document_end'
-      });
-    }
-    else { // Manifest V3
-      await browser.scripting.executeScript({
-        target: { tabId },
-        func: run,
-        args: [title]
-      });
-    }
+    }, title);
   }
 
   static _cleanupDialog(tabId, { uniqueKey, oneTimeKey }) {
-    const cleanup = function(uniqueKey, oneTimeKey) {
+    return this._runInTab(tabId, (uniqueKey, oneTimeKey) => {
       const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
       const map = window.$$RichConfirm_Containers;
       if (map) {
@@ -135,22 +128,7 @@ class RichConfirm {
           map.delete(idKey);
         }
       }
-    };
-
-    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-      browser.tabs.executeScript(tabId, {
-        code: `(${cleanup.toString()})(${JSON.stringify(uniqueKey)}, ${JSON.stringify(oneTimeKey)});`,
-        matchAboutBlank: true,
-        runAt:           'document_end'
-      }).catch(() => {});
-    }
-    else { // Manifest V3
-      browser.scripting.executeScript({
-        target: { tabId },
-        func: cleanup,
-        args: [uniqueKey, oneTimeKey]
-      }).catch(() => {});
-    }
+    }, uniqueKey, oneTimeKey);
   }
 
   static async showInTab(tabId, params) {
@@ -236,20 +214,32 @@ class RichConfirm {
 
   static async showInPopup(ownerWinId, params) {
     let ownerWin;
-    if (!params) {
-      params = ownerWinId;
-      ownerWin = await browser.windows.getLastFocused({});
-    }
-    else {
-      try {
-        ownerWin = await browser.windows.get(ownerWinId).catch(_error => null);
-      }
-      catch(_error) {
-      }
-      if (!ownerWin) {
-        ownerWin = await browser.windows.getLastFocused({});
-      }
-    }
+    const [shouldPreventRestoration] = await Promise.all([
+      (async () => {
+        try {
+          return browser.permissions.contains({ origins: ['<all_urls>'] });
+        }
+        catch(_error) {
+        }
+        return false;
+      })(),
+      (async () => {
+        if (!params) {
+          params = ownerWinId;
+          ownerWin = await browser.windows.getLastFocused({});
+        }
+        else {
+          try {
+            ownerWin = await browser.windows.get(ownerWinId).catch(_error => null);
+          }
+          catch(_error) {
+          }
+          if (!ownerWin) {
+            ownerWin = await browser.windows.getLastFocused({});
+          }
+        }
+      })(),
+    ]);
 
     if (!this.dialogHtmlPath)
       throw new Error('RichConfirm is not initialized. Call RichConfirm.init() first.');
@@ -316,7 +306,7 @@ class RichConfirm {
       simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
     }
 
-    const playgroundUrl = params.useBlank ? 'about:blank' : dialogFullUrl;
+    const playgroundUrl = shouldPreventRestoration ? 'about:blank' : dialogFullUrl;
 
     let playgroundTab, onMessage;
     const promisedResult = new Promise((resolve, _reject) => {
@@ -364,7 +354,7 @@ class RichConfirm {
               url:      playgroundUrl,
               active:   true
             });
-            if (params.useBlank) {
+            if (shouldPreventRestoration) {
               browser.tabs.get(playgroundTab.id).then(currentTab => {
                 if (currentTab?.status == 'complete') resolve();
               }).catch(() => {});
@@ -402,7 +392,7 @@ class RichConfirm {
       playgroundTab = win.tabs.find(tab => tab.active);
     }
 
-    if (params.useBlank) {
+    if (shouldPreventRestoration) {
       await Promise.all([
         this._injectDialog(playgroundTab.id, {
           url: dialogFullUrl,
@@ -410,6 +400,7 @@ class RichConfirm {
           oneTimeKey,
         }),
         this._setTitle(playgroundTab.id, params.title),
+        this._clearPermissionNote(playgroundTab.id),
       ]);
     }
 

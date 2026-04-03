@@ -1019,6 +1019,10 @@ class RichConfirmDialog {
       }
     }
 
+    if (window.top !== window) {
+      document.querySelector('#permissionNote')?.remove();
+    }
+
     const dialog = new this({
       ...params,
       uniqueKey,
