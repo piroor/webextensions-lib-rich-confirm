@@ -7,7 +7,7 @@
 
 class RichConfirm {
   static init(dialogHtmlPath) {
-    this.dialogHtmlPath = dialogHtmlPath;
+    this.dialogHtmlPath = /^[^:]+:\/\//.test(dialogHtmlPath) ? dialogHtmlPath : browser.runtime.getURL(dialogHtmlPath);
     this.dialogJsPath = dialogHtmlPath.replace(/\.html$/, '.js');
   }
 
