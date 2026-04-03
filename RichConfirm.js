@@ -291,7 +291,11 @@ class RichConfirm {
       simulatedContainer.style.minWidth  = `${minWidth}px`;
       simulatedContainer.style.minHeight = `${minHeight}px`;
       await new Promise((resolve, _reject) => {
-        simulation.onShown = () => {
+        const originalOnShown = simulation.onShown.bind(simulation);
+        simulation.onShown = async (container) => {
+          const result = originalOnShown(container);
+          if (result instanceof Promise)
+            await result;
           setTimeout(() => {
             resolve();
           }, 0);

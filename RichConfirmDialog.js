@@ -647,32 +647,12 @@ class RichConfirmDialog {
     }
   }
 
-  get onShown() {
-    return this.$onShown;
-  }
-  set onShown(onShown) {
-    const previousOnShown = this.$onShown;
-    this.$onShown = async (...params) => {
-      await previousOnShown.call(this, ...params);
-      return onShown.call(this, ...params);
-    };
-  }
-  async $onShown(container) {
+  async onShown(container) {
     // override me!
     console.log('onShown: ', { container });
   }
 
-  get onDialogOpened() {
-    return this.$onDialogOpened;
-  }
-  set onDialogOpened(onDialogOpened) {
-    const previousOnDialogOpened = this.$onDialogOpened;
-    this.$onDialogOpened = async (...params) => {
-      await previousOnDialogOpened.call(this, ...params);
-      return onDialogOpened.call(this, ...params);
-    };
-  }
-  async $onDialogOpened({ close, updateContent }) {
+  async onDialogOpened({ close, updateContent }) {
     // override me!
     console.log('onDialogOpened: ', { close, updateContent });
   }

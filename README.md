@@ -16,8 +16,14 @@ Helps to provide confirmation dialog with checkbox.
 
 Load the file `RichConfirm.js` from any document (background page, sidebar panel, or browser action panel), like:
 
-```json
+```html
 <script type="application/javascript" src="./RichConfirm.js"></script>
+```
+
+If you put `RichConfirm.js`, `RichConfirmDialog.html`, and `RichConfirmDialog.js` in different directories, you need to explicitly initialize it with the path to `RichConfirmDialog.html` before showing the dialog:
+
+```javascript
+RichConfirm.init('/path/to/RichConfirmDialog.html');
 ```
 
 And, call `RichConfirm.show()` with required parameters like:
@@ -41,9 +47,6 @@ Here is the list of parameters:
 And there are more advanced parameters. See also the "Advanced usage" section.
 
  * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This parameter is exclusive with `message`. (`String`)
- * `onShown` (optional): Event handler when the dialog is shown. (`Function`)
- * `onHidden` (optional): Event handler when the dialog is hidden. (`Function`)
- * `inject` (optional): Properties given to event handlers executed in a different namespace. (`Object')
 
 `RichConfirm.show()` returns a `Promise`. It will be resolved with an object with following attributes:
 
@@ -53,12 +56,61 @@ And there are more advanced parameters. See also the "Advanced usage" section.
 
 ## Advanced usage
 
-You can show a dialog with your favorite UI elements. For example:
+You can show a dialog with your favorite UI elements. To customize the dialog's behavior, create a class extending `RichConfirmDialog` and use it as your dialog script.
+If you need to customize the dialog appearance and structure, you can also override `generateStyleDefinitions()` (for custom styling) and `updateContent()` (for content initialization).
+
+In your custom dialog script (e.g. `CustomConfirmDialog.js`):
 
 ```javascript
+import RichConfirmDialog from './RichConfirmDialog.js';
+
+export default class CustomConfirmDialog extends RichConfirmDialog {
+  generateStyleDefinitions() {
+    // Override this to provide custom CSS for your custom elements.
+    return super.generateStyleDefinitions() + `
+      .${this.commonClass} .my-custom-element {
+        color: red;
+      }
+    `;
+  }
+
+  async updateContent({ content, message }) {
+    // Override this method to initialize your custom content structure.
+    await super.updateContent({ content, message });
+    // Or you can ignore super.updateContent() completely and build your own UI.
+  }
+
+  async onShown(container) {
+    // This method receives the container element of the dialog contents.
+    // You can register listeners to generated fields or do more initialization.
+    // e.g.: container.querySelector('input[name="title"]').addEventListener(...);
+  }
+
+  async hide() {
+    // You can destroy generated fields or do cleanup when the dialog is closed.
+    // e.g.: this.content.querySelector('input[name="title"]').removeEventListener(...);
+    return super.hide();
+  }
+}
+window.CustomConfirmDialog = CustomConfirmDialog;
+window.RICH_CONFIRM_DIALOG_CLASS_NAME = 'CustomConfirmDialog'; // this is required for showInPopup()
+```
+
+To use this custom dialog, you also need to create a custom HTML file (e.g., `CustomConfirmDialog.html`) that loads your custom script instead of `RichConfirmDialog.js`.
+Then, extend the `RichConfirm` class itself to use the new HTML file without affecting the default `RichConfirm` configuration:
+
+```javascript
+import RichConfirm from './RichConfirm.js';
+
+export default class CustomConfirm extends RichConfirm {
+}
+// Initialize with your custom HTML file
+CustomConfirm.init('/path/to/CustomConfirmDialog.html');
+
+// Now you can open your custom dialog by calling show() on your extended class:
 var title  = 'example';
 var url    = 'http://example.com/';
-var result = await RichConfirm.show({
+var result = await CustomConfirm.show({
   content: `
     <p><label>Name:
               <input type="text"
@@ -69,26 +121,6 @@ var result = await RichConfirm.show({
                      name="url"
                      value=${JSON.stringify(url)}></label></p>
   `,
-  // The handler "onShown" and "onHidden" can be executed in a different
-  // namespace. If you want to deliver functions, classes, and other
-  // JSON.stringify-acceptable values to these handlers, you need to
-  // inject them explicitly.
-  inject: {
-    foo,
-    bar
-  },
-  onShown(container, { foo, bar }) {
-    // This handler recenves the container element of contents
-    // generated from the "content" parameter.
-    // You can register listeners to generated fields or
-    // do more initialization, like:
-    // container.querySelector('input[name="title"]').addEventListener(...);
-  },
-  onHidden(container, { foo, bar }) {
-    // You can destroy generated fields when the dialog is
-    // closed, like:
-    // container.querySelector('input[name="title"]').removeEventListener(...);
-  },
   buttons: ['Save', 'Cancel']
 });
 
@@ -120,6 +152,7 @@ If you want to show the confirmation dialog as a popup window, call `RichConfirm
 
 ```javascript
 var result = await RichConfirm.showInPopup(10, {
+  useBlank:     true, // optional (default=false)
   modal:        true, // optional (default=false)
   url:          '/path/to/your/addon/file.html', // required on Firefox ESR68
   title:        'Are you ready?', // optional (default="")
@@ -132,45 +165,69 @@ var result = await RichConfirm.showInPopup(10, {
 
 The first parameter is `windows.Window.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will be placed on the last focused window.
 
+If you pass `useBlank: true` in the parameters, the dialog window/tab is initially opened with `about:blank` and its contents are injected into it. This prevents the dialog from being restored unexpectedly by the browser's "Restore closed tabs/windows" feature (like Ctrl-Shift-T on Firefox 116 and later).
+
 The `url` parameter is required on ESR68, [otherwise the popup will become blank](https://github.com/piroor/treestyletab/issues/2564). You just need to put any HTML file under your addon's namespace, so the minimum example is:
 
 ```html
 <!DOCTYPE html>
 ```
 
-*Please note that this is due to restrictions on exect version ESR68. It is recommended to not specify such a custom blank page if you don't need to support old versions of Firefox including ESR68.* Firefox 116 and later restores last closed window with Ctrl-Shift-T so this kind of dialogs may be restored unexpectedly if you specify custom blank page. No `url` option won't cause such unexpectedly restored dialogs.
+*Please note that this is due to restrictions on exact version ESR68. It is recommended to not specify such a custom blank page if you don't need to support old versions of Firefox including ESR68.*
 
-If you give `onShown` and `onHidden` callbacks you will see that they are called twice per one `RichConfirm.showInPupup()` call. Due to some restrictions (including [the bug 1271047](https://bugzilla.mozilla.org/show_bug.cgi?id=1271047)) we cannot determine the size of the popup before it is actually rendered, so this library tries to render the dialog silently and invisiblly at first, and opens the real popup window with the determined size. If you want some operations in those callbacks are skipped on the first try, you can determine it is in the simulation (first try) or the real (second try), with the existence of the `simulation` class given to the container element, like following:
+When using `RichConfirm.showInPopup()`, the dialog class methods like `onShown()` and `hide()` will be called twice per one call. Due to some restrictions (including [the bug 1271047](https://bugzilla.mozilla.org/show_bug.cgi?id=1271047)) we cannot determine the size of the popup before it is actually rendered, so this library tries to render the dialog silently and invisibly at first, and opens the real popup window with the determined size. If you want some operations to be skipped on the first try, you can determine if it is in the simulation (first try) with `this.params.simulation` in your custom dialog class:
 
 ```javascript
-var result = await RichConfirm.showInPopup(10, {
-  ...
-  onShown(container, injected) {
-    if (container.classList.contains('simulation'))
+import RichConfirmDialog from './RichConfirmDialog.js';
+
+export default class CustomConfirmDialog extends RichConfirmDialog {
+  async onShown(container) {
+    if (this.params.simulation)
       return;
-    // Operations to inizialize the dialog contents should be here.
+    // Operations to initialize the dialog contents should be here.
   }
-});
+}
 ```
 
 
 ## Control confirmation dialog from outside
 
-Methods to show a confirmation accepts a functional parameter `onDialogOpened`.
-It will be called when a confirmation dialog is opened, with an object having `close` and `updateContent` methods.
-You can control the confirmation dialog from outside of the flow, like following:
+Methods to show a confirmation dialog can be controlled from outside of the flow. To do this, override the `onDialogOpened` method in your custom dialog class, where you receive an object having `close` and `updateContent` methods.
+Since the dialog may be running in a separate context from the background script, you might need to use `browser.runtime.onMessage` to communicate with it, like following:
 
 ```javascript
-var dialogCloser;
-var dialogContentUpdater;
+import RichConfirmDialog from './RichConfirmDialog.js';
 
+export default class CustomConfirmDialog extends RichConfirmDialog {
+  async onDialogOpened({ close, updateContent }) {
+    this.onMessage = (message) => {
+      if (message.type === 'update-progress') {
+        updateContent({
+          // the updater function accepts `content` and `message` parameters same to the dialog itself.
+          message: message.percentage + '% saved...',
+        });
+      }
+      else if (message.type === 'cancel') {
+        close();
+      }
+    };
+    browser.runtime.onMessage.addListener(this.onMessage);
+  }
+
+  async hide() {
+    if (this.onMessage) {
+      browser.runtime.onMessage.removeListener(this.onMessage);
+    }
+    return super.hide();
+  }
+}
+```
+
+```javascript
+// In background script or other contexts:
 async function doWithConfirmation() {
   var result = await RichConfirm.showInPopup(10, {
-    ...
-    onDialogOpened({ close, updateContent }) {
-      dialogCloser = close;
-      dialogContentUpdater = updateContent;
-    }
+    // ...
   });
   if (result.buttonIndex == 0) {
     // something critical operations
@@ -181,15 +238,15 @@ doWithConfirmation();
 
 saveFileInBackground({
   onProgress(percentage) {
-    dialogContentUpdater({
-      // the updater function accepts `content` and `message` parameters same to the dialog itself.
-      message: percentage + '% saved...',
+    browser.runtime.sendMessage({
+      type: 'update-progress',
+      percentage: percentage,
     });
   },
 });
 
 setTimeout(() => {
   // cancel the confirmation after 30 seconds
-  dialogCloser();
+  browser.runtime.sendMessage({ type: 'cancel' });
 }, 30000);
 ```
