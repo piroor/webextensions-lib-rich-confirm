@@ -316,9 +316,9 @@ class RichConfirm {
               active:   true
             });
           })
-          .finally(() => {
-            browser.tabs.onUpdated.removeListener(onUpdated);
-          });
+            .finally(() => {
+              browser.tabs.onUpdated.removeListener(onUpdated);
+            });
         })(),
         new Promise(resolve => setTimeout(resolve, 1000)),
       ]);
