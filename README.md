@@ -191,7 +191,7 @@ export default class CustomConfirmDialog extends RichConfirmDialog {
 
 ## Control confirmation dialog from outside
 
-A confirmation dialog can be controlled from outside of the flow. To do this, give a callback function after the parameters, where you receive an object having `close` and `updateContent` methods.
+A confirmation dialog can be controlled from outside of the flow. To do this, give a callback function as the last argument, where you receive an object having `close` and `updateContent` methods when the dialog is opened.
 Since the dialog may be running in a separate context from the background script, you might call closer and updater methods, like following:
 
 ```javascript

@@ -37,7 +37,7 @@ class RichConfirm {
     return `__RichConfirm_${this.uniqueKey}__confirmation-dialog-ready`;
   }
 
-  static async show(params, asyncCallback = null) {
+  static async show(params, onDialogOpened = null) {
     if (!this.Dialog) {
       await this.ensureDialogClassLoaded();
     }
@@ -48,8 +48,9 @@ class RichConfirm {
       uniqueKey:  this.uniqueKey,
       oneTimeKey: `inline-${this.uniqueKey}-${Date.now()}-${parseInt(Math.random() * Math.pow(2, 16))}`,
     });
-    if (typeof asyncCallback == 'function') {
-      asyncCallback({
+    const result = confirm.show();
+    if (typeof onDialogOpened == 'function') {
+      onDialogOpened({
         close: () => {
           confirm.hide();
         },
@@ -58,7 +59,7 @@ class RichConfirm {
         },
       });
     }
-    return confirm.show();
+    return result;
   }
 
   static async _runInTab(tabId, func, ...args) {
@@ -142,9 +143,9 @@ class RichConfirm {
     }, uniqueKey, oneTimeKey);
   }
 
-  static async showInTab(tabId, params, asyncCallback = null) {
+  static async showInTab(tabId, params, onDialogOpened = null) {
     if (typeof tabId != 'number') {
-      asyncCallback = params;
+      onDialogOpened = params;
       params = tabId;
       tabId = (await browser.tabs.getCurrent()).id;
     }
@@ -168,6 +169,29 @@ class RichConfirm {
           return;
 
         switch (message.type) {
+          case this.DIALOG_READY_NOTIFICATION_TYPE:
+            if (typeof onDialogOpened == 'function') {
+              onDialogOpened({
+                close: () => {
+                  browser.runtime.sendMessage({
+                    type: 'rich-confirm-close',
+                    uniqueKey,
+                    oneTimeKey,
+                  });
+                },
+                updateContent: ({ content, message }) => {
+                  browser.runtime.sendMessage({
+                    type: 'rich-confirm-update-content',
+                    uniqueKey,
+                    oneTimeKey,
+                    content,
+                    message,
+                  });
+                },
+              });
+            }
+            break;
+
           case 'rich-confirm-dialog-complete':
             resolve(message.result);
             break;
@@ -201,29 +225,7 @@ class RichConfirm {
         oneTimeKey,
       });
 
-      if (typeof asyncCallback == 'function') {
-        asyncCallback({
-          close: () => {
-            browser.runtime.sendMessage({
-              type: 'rich-confirm-close',
-              uniqueKey,
-              oneTimeKey,
-            });
-          },
-          updateContent: ({ content, message }) => {
-            browser.runtime.sendMessage({
-              type: 'rich-confirm-update-content',
-              uniqueKey,
-              oneTimeKey,
-              content,
-              message,
-            });
-          },
-        });
-      }
-
-      const result = await Promise.race([promisedResult, promisedDismissed]);
-      return result;
+      return await Promise.race([promisedResult, promisedDismissed]);
     }
     catch(error) {
       console.error(error, error.stack);
@@ -245,7 +247,7 @@ class RichConfirm {
     }
   }
 
-  static async showInPopup(ownerWinId, params, asyncCallback = null) {
+  static async showInPopup(ownerWinId, params, onDialogOpened = null) {
     let ownerWin;
     const [shouldPreventRestoration] = await Promise.all([
       (async () => {
@@ -258,7 +260,7 @@ class RichConfirm {
       })(),
       (async () => {
         if (typeof ownerWinId != 'number') {
-          asyncCallback = params;
+          onDialogOpened = params;
           params = ownerWinId;
           ownerWin = await browser.windows.getLastFocused({});
         }
@@ -347,6 +349,28 @@ class RichConfirm {
       onMessage = (message, sender) => {
         switch (message?.type) {
           case this.DIALOG_READY_NOTIFICATION_TYPE:
+            if (typeof onDialogOpened == 'function') {
+              onDialogOpened({
+                close: () => {
+                  browser.runtime.sendMessage({
+                    type: 'rich-confirm-close',
+                    uniqueKey,
+                    oneTimeKey,
+                  });
+                },
+                updateContent: ({ content, message }) => {
+                  browser.runtime.sendMessage({
+                    type: 'rich-confirm-update-content',
+                    uniqueKey,
+                    oneTimeKey,
+                    content,
+                    message,
+                  });
+                },
+              });
+            }
+            break;
+
             this._tryRepositionDialogToCenterOfOwner({
               ...message,
               dialogWindowId: sender.tab.windowId,
@@ -501,27 +525,6 @@ class RichConfirm {
       browser.windows.update(win.id, { focused: true });
     };
     browser.windows.onFocusChanged.addListener(onFocusChanged);
-
-    if (typeof asyncCallback == 'function') {
-      asyncCallback({
-        close: () => {
-          browser.runtime.sendMessage({
-            type: 'rich-confirm-close',
-            uniqueKey,
-            oneTimeKey,
-          });
-        },
-        updateContent: ({ content, message }) => {
-          browser.runtime.sendMessage({
-            type: 'rich-confirm-update-content',
-            uniqueKey,
-            oneTimeKey,
-            content,
-            message,
-          });
-        },
-      });
-    }
 
     try {
       return await Promise.race([promisedResult, promisedDismissed]);

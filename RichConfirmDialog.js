@@ -707,10 +707,6 @@ class RichConfirmDialog {
     }
 
     setTimeout(() => {
-      if (!this.ui ||
-          !this.ui.classList)
-        return;
-
       browser.runtime.sendMessage({
         type:          this.DIALOG_READY_NOTIFICATION_TYPE,
         ownerWindowId: this.params.ownerWindowId,
@@ -719,6 +715,10 @@ class RichConfirmDialog {
         availWidth:    screen.availWidth,
         availHeight:   screen.availHeight,
       });
+
+      if (!this.ui ||
+          !this.ui.classList)
+        return;
 
       // Apply overflow:auto after all contents are correctly rendered.
       this.ui.classList.add('shown');
