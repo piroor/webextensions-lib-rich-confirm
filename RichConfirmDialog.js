@@ -523,7 +523,7 @@ class RichConfirmDialog {
       this.isRTL ? 'rtl' : '',
     ].join(' ');
     return `
-      <div class="rich-confirm ${commonClass} ${this.uniqueId}" title="${commonClass}">
+      <div class="rich-confirm ${commonClass} ${this.uniqueId} ${this.params.extraClass || ''}">
         <div class="rich-confirm-row ${commonClass}">
           <div class="rich-confirm-dialog ${commonClass}" role="dialog">
             <div class="rich-confirm-content ${commonClass}"></div>
