@@ -525,7 +525,7 @@ class RichConfirmDialog {
     return `
       <div class="rich-confirm ${commonClass} ${this.uniqueId} ${this.params.extraClass || ''}">
         <div class="rich-confirm-row ${commonClass}">
-          <div class="rich-confirm-dialog ${commonClass}" role="dialog">
+          <div class="rich-confirm-dialog ${commonClass} ${this.params.extraClass || ''}" role="dialog">
             <div class="rich-confirm-content ${commonClass}"></div>
             <label class="rich-confirm-check-label ${commonClass}">
               <input type="checkbox"
