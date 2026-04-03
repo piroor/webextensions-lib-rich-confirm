@@ -108,11 +108,11 @@ class RichConfirm {
     try {
       const run = function run(url, uniqueKey, oneTimeKey, customElementName) {
         const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
-        window.__RichConfirm_Containers__ = window.__RichConfirm_Containers__ || new Map();
-        let container = window.__RichConfirm_Containers__.get(idKey);
+        window.$$RichConfirm_Containers = window.$$RichConfirm_Containers || new Map();
+        let container = window.$$RichConfirm_Containers.get(idKey);
         if (!container) {
-          const type = window.__RichConfirm_ClosedContainerType__ || customElementName;
-          window.__RichConfirm_ClosedContainerType__ = type;
+          const type = window.$$RichConfirm_ClosedContainerType || customElementName;
+          window.$$RichConfirm_ClosedContainerType = type;
           if (!window.customElements.get(type)) {
             class RichConfirmContainer extends HTMLElement {}
             window.customElements.define(type, RichConfirmContainer);
@@ -128,7 +128,7 @@ class RichConfirm {
           shadow.appendChild(iframe);
 
           (document.body || document.documentElement).appendChild(container);
-          window.__RichConfirm_Containers__.set(idKey, container);
+          window.$$RichConfirm_Containers.set(idKey, container);
         }
       };
 
@@ -168,7 +168,7 @@ class RichConfirm {
 
       const cleanup = function(uniqueKey, oneTimeKey) {
         const idKey = `rich-confirm-${uniqueKey}-${oneTimeKey}`;
-        const map = window.__RichConfirm_Containers__;
+        const map = window.$$RichConfirm_Containers;
         if (map) {
           const container = map.get(idKey);
           if (container) {
