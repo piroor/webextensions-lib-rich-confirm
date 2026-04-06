@@ -700,6 +700,25 @@ class RichConfirmDialog {
     this.ui.classList.add('show');
 
     try {
+      if (this.params.values && typeof this.params.values == 'object') {
+        for (const [id, value] of Object.entries(this.params.values)) {
+          const safeId = JSON.stringify(id);
+          for (const field of this.content.querySelectorAll(`[id=${safeId}], [name=${safeId}]`)) {
+            if (field.matches('input[type="checkbox"]')) {
+              field.checked = !!value;
+            }
+            else if (field.matches('input[type="radio"]') && !!value) {
+              field.checked = true;
+            }
+            else if ('value' in field.dataset) {
+              field.dataset.value = value;
+            }
+            else {
+              field.value = value;
+            }
+          }
+        }
+      }
       await this.onShown(this.content);
     }
     catch(error) {

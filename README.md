@@ -121,6 +121,7 @@ var result = await CustomConfirm.show({
                      name="url"
                      value=${JSON.stringify(url)}></label></p>
   `,
+  values: { title, url }, // default values automatically filled to fields with the ID or name
   buttons: ['Save', 'Cancel']
 });
 
