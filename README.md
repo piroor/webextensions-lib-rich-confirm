@@ -47,6 +47,8 @@ Here is the list of parameters:
 And there are more advanced parameters. See also the "Advanced usage" section.
 
  * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This parameter is exclusive with `message`. (`String`)
+ * `values` (optional): Values to be filled to the fields. Fielrs are automatically detected with their `id` or `name` based on the keys of the object. (`Object`)
+ * `extraClass` (optional): Additional class name for the dialog element. It will help you styling of custom dialogs. (`String`)
 
 `RichConfirm.show()` returns a `Promise`. It will be resolved with an object with following attributes:
 
@@ -114,12 +116,10 @@ var result = await CustomConfirm.show({
   content: `
     <p><label>Name:
               <input type="text"
-                     name="title"
-                     value=${JSON.stringify(title)}></label></p>
+                     name="title"></label></p>
     <p><label>Location:
               <input type="text"
-                     name="url"
-                     value=${JSON.stringify(url)}></label></p>
+                     name="url"></label></p>
   `,
   values: { title, url }, // default values automatically filled to fields with the ID or name
   buttons: ['Save', 'Cancel']
@@ -145,6 +145,8 @@ var result = await RichConfirm.showInTab(10, {
 ```
 
 The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will appear in the current tab.
+
+The in-content dialog will be enclosed in a `iframe` under a closed shadow DOM, so you don't worry about accesses from scripts in the web page, or confliction of `id`/`name`s of fields.
 
 
 ## Confirmation in a popup window
