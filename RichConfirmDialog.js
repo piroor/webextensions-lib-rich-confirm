@@ -726,6 +726,7 @@ class RichConfirmDialog {
     }
 
     setTimeout(() => {
+      try {
       browser.runtime.sendMessage({
         type:          this.DIALOG_READY_NOTIFICATION_TYPE,
         ownerWindowId: this.params.ownerWindowId,
@@ -733,7 +734,11 @@ class RichConfirmDialog {
         availTop:      screen.availTop,
         availWidth:    screen.availWidth,
         availHeight:   screen.availHeight,
-      });
+      }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
+      }
+      catch(error) {
+        console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error);
+      }
 
       if (!this.ui ||
           !this.ui.classList)
@@ -1052,27 +1057,39 @@ class RichConfirmDialog {
     // updated by the dialog implementation itself.
     if (typeof dialog.params.title == 'string') {
       document.title = dialog.params.title;
+      try {
       browser.runtime.sendMessage({
         type:  'rich-confirm-set-dialog-title',
         uniqueKey,
         oneTimeKey,
         title: dialog.params.title,
-      });
+      }).catch(error => console.log('failed to send rich-confirm-set-dialog-title message: ', error));
+      }
+      catch(error) {
+        console.log('failed to send rich-confirm-set-dialog-title message: ', error);
+      }
     }
 
     // Wire communication internally or trust window.opener / browser.runtime
     // We'll trust browser.runtime.sendMessage to notify completion
     dialog.show().then(result => {
+      try {
       browser.runtime.sendMessage({
         type: 'rich-confirm-dialog-complete',
         uniqueKey,
         oneTimeKey,
         result,
-      }).then(() => {
-        window.close();
-      }).catch(() => {
+      })
+      .catch(error => {
+        console.log('failed to send rich-confirm-dialog-complete message: ', error);
+      })
+      .finally(() => {
         window.close();
       });
+      }
+      catch(error) {
+        console.log('failed to send rich-confirm-dialog-complete message: ', error);
+      }
     });
   }
 };
