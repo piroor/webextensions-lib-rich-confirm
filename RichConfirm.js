@@ -63,6 +63,10 @@ class RichConfirm {
   }
 
   static async _runInTab(tabId, func, ...args) {
+    try {
+      const tab = await browser.tabs.get(tabId);
+      if (!tab.url.test(/^(about:blank|(https?|file):\/\/)/))
+        return;
     if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
       await browser.tabs.executeScript(tabId, {
         code: `(${func.toString()})(...${JSON.stringify(args)});`,
@@ -76,6 +80,10 @@ class RichConfirm {
         func,
         args,
       });
+    }
+    }
+    catch(error) {
+      console.error(error);
     }
   }
 
