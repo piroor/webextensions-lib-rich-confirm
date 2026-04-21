@@ -67,20 +67,20 @@ class RichConfirm {
       const tab = await browser.tabs.get(tabId);
       if (!tab.url.test(/^(about:blank|(https?|file):\/\/)/))
         return;
-    if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
-      await browser.tabs.executeScript(tabId, {
-        code: `(${func.toString()})(...${JSON.stringify(args)});`,
-        matchAboutBlank: true,
-        runAt:           'document_end'
-      });
-    }
-    else { // Manifest V3
-      await browser.scripting.executeScript({
-        target: { tabId },
-        func,
-        args,
-      });
-    }
+      if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
+        await browser.tabs.executeScript(tabId, {
+          code: `(${func.toString()})(...${JSON.stringify(args)});`,
+          matchAboutBlank: true,
+          runAt:           'document_end'
+        });
+      }
+      else { // Manifest V3
+        await browser.scripting.executeScript({
+          target: { tabId },
+          func,
+          args,
+        });
+      }
     }
     catch(error) {
       console.error(error);
