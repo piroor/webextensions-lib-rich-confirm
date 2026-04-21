@@ -727,14 +727,14 @@ class RichConfirmDialog {
 
     setTimeout(() => {
       try {
-      browser.runtime.sendMessage({
-        type:          this.DIALOG_READY_NOTIFICATION_TYPE,
-        ownerWindowId: this.params.ownerWindowId,
-        availLeft:     screen.availLeft,
-        availTop:      screen.availTop,
-        availWidth:    screen.availWidth,
-        availHeight:   screen.availHeight,
-      }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
+        browser.runtime.sendMessage({
+          type:          this.DIALOG_READY_NOTIFICATION_TYPE,
+          ownerWindowId: this.params.ownerWindowId,
+          availLeft:     screen.availLeft,
+          availTop:      screen.availTop,
+          availWidth:    screen.availWidth,
+          availHeight:   screen.availHeight,
+        }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
       }
       catch(error) {
         console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error);
@@ -1058,12 +1058,12 @@ class RichConfirmDialog {
     if (typeof dialog.params.title == 'string') {
       document.title = dialog.params.title;
       try {
-      browser.runtime.sendMessage({
-        type:  'rich-confirm-set-dialog-title',
-        uniqueKey,
-        oneTimeKey,
-        title: dialog.params.title,
-      }).catch(error => console.log('failed to send rich-confirm-set-dialog-title message: ', error));
+        browser.runtime.sendMessage({
+          type:  'rich-confirm-set-dialog-title',
+          uniqueKey,
+          oneTimeKey,
+          title: dialog.params.title,
+        }).catch(error => console.log('failed to send rich-confirm-set-dialog-title message: ', error));
       }
       catch(error) {
         console.log('failed to send rich-confirm-set-dialog-title message: ', error);
@@ -1074,18 +1074,18 @@ class RichConfirmDialog {
     // We'll trust browser.runtime.sendMessage to notify completion
     dialog.show().then(result => {
       try {
-      browser.runtime.sendMessage({
-        type: 'rich-confirm-dialog-complete',
-        uniqueKey,
-        oneTimeKey,
-        result,
-      })
-      .catch(error => {
-        console.log('failed to send rich-confirm-dialog-complete message: ', error);
-      })
-      .finally(() => {
-        window.close();
-      });
+        browser.runtime.sendMessage({
+          type: 'rich-confirm-dialog-complete',
+          uniqueKey,
+          oneTimeKey,
+          result,
+        })
+          .catch(error => {
+            console.log('failed to send rich-confirm-dialog-complete message: ', error);
+          })
+          .finally(() => {
+            window.close();
+          });
       }
       catch(error) {
         console.log('failed to send rich-confirm-dialog-complete message: ', error);
