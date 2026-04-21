@@ -726,6 +726,7 @@ class RichConfirmDialog {
     }
 
     setTimeout(() => {
+      if (!this.params.simulation) {
       try {
         browser.runtime.sendMessage({
           type:          this.DIALOG_READY_NOTIFICATION_TYPE,
@@ -738,6 +739,7 @@ class RichConfirmDialog {
       }
       catch(error) {
         console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error);
+      }
       }
 
       if (!this.ui ||
