@@ -632,7 +632,7 @@ class RichConfirm {
     return win;
   }
 
-  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight }) {
+  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight, windowFrameWidth, windowFrameHeight }) {
     const [dialogWin, ownerWin] = await Promise.all([
       browser.windows.get(dialogWindowId),
       browser.windows.get(ownerWindowId),
@@ -652,11 +652,15 @@ class RichConfirm {
     if (placedOnOwner && placedInsideViewArea)
       return;
 
-    const top  = ownerWin.top + Math.round((ownerWin.height - dialogWin.height) / 2);
-    const left = ownerWin.left + Math.round((ownerWin.width - dialogWin.width) / 2);
+    const width  = dialogWin.width + windowFrameWidth;
+    const height = dialogWin.height + windowFrameHeight;
+    const left = ownerWin.left + Math.round((ownerWin.width - width) / 2);
+    const top  = ownerWin.top + Math.round((ownerWin.height - height) / 2);
     return browser.windows.update(dialogWin.id, {
-      left: Math.min(availLeft + availWidth - dialogWin.width, Math.max(availLeft, left)),
-      top:  Math.min(availTop + availHeight - dialogWin.height, Math.max(availTop, top)),
+      width,
+      height,
+      left: Math.min(availLeft + availWidth - width, Math.max(availLeft, left)),
+      top:  Math.min(availTop + availHeight - height, Math.max(availTop, top)),
     });
   }
 }

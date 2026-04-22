@@ -729,12 +729,14 @@ class RichConfirmDialog {
       if (!this.params.simulation) {
         try {
           browser.runtime.sendMessage({
-            type:          this.DIALOG_READY_NOTIFICATION_TYPE,
-            ownerWindowId: this.params.ownerWindowId,
-            availLeft:     screen.availLeft,
-            availTop:      screen.availTop,
-            availWidth:    screen.availWidth,
-            availHeight:   screen.availHeight,
+            type:              this.DIALOG_READY_NOTIFICATION_TYPE,
+            ownerWindowId:     this.params.ownerWindowId,
+            availLeft:         screen.availLeft,
+            availTop:          screen.availTop,
+            availWidth:        screen.availWidth,
+            availHeight:       screen.availHeight,
+            windowFrameWidth:  window.outerWidth - window.innerWidth,
+            windowFrameHeight: window.outerHeight - window.innerHeight,
           }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
         }
         catch(error) {
