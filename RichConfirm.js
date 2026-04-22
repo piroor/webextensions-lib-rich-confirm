@@ -259,6 +259,9 @@ class RichConfirm {
     let ownerWin;
     const [shouldPreventRestoration] = await Promise.all([
       (async () => {
+        // Thunderbird disallows us to inject scripts to a blank tab, so we need to avoid using about:blank!
+        if (globalThis?.messenger)
+          return false;
         try {
           return browser.permissions.contains({ origins: ['<all_urls>'] });
         }
