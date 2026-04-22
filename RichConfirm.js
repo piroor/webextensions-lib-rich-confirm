@@ -380,8 +380,6 @@ class RichConfirm {
                 },
               });
             }
-            break;
-
             this._tryRepositionDialogToCenterOfOwner({
               ...message,
               dialogWindowId: sender.tab.windowId,
