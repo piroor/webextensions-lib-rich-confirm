@@ -355,7 +355,7 @@ class RichConfirm {
 
     const playgroundUrl = shouldPreventRestoration ? 'about:blank' : dialogFullUrl;
 
-    let playgroundTab, onMessage;
+    let playgroundTab, onMessage, win;
     const promisedResult = new Promise((resolve, _reject) => {
       onMessage = (message, sender) => {
         switch (message?.type) {
@@ -363,11 +363,14 @@ class RichConfirm {
             if (typeof onDialogOpened == 'function') {
               onDialogOpened({
                 close: () => {
-                  browser.runtime.sendMessage({
-                    type: 'rich-confirm-close',
-                    uniqueKey,
-                    oneTimeKey,
-                  });
+                  if (win)
+                    browser.windows.remove(win.id);
+                  else
+                    browser.runtime.sendMessage({
+                      type: 'rich-confirm-close',
+                      uniqueKey,
+                      oneTimeKey,
+                    });
                 },
                 updateContent: ({ content, message }) => {
                   browser.runtime.sendMessage({
@@ -401,7 +404,6 @@ class RichConfirm {
       browser.runtime.onMessage.addListener(onMessage);
     });
 
-    let win;
     if (openInTab) {
       win = ownerWin;
       await Promise.race([
