@@ -397,7 +397,8 @@ class RichConfirm {
             break;
 
           case 'rich-confirm-set-dialog-title':
-            this._setTitle(playgroundTab.id, message.title);
+            if (playgroundTab)
+              this._setTitle(playgroundTab.id, message.title);
             break;
         }
       };
