@@ -63,8 +63,14 @@ class RichConfirm {
   }
 
   static async _runInTab(tabId, func, ...args) {
+    const tab = await browser.tabs.get(tabId).catch(_error => null);
+    const retryCount = func.$retryCount || 0;
+    if (retryCount > 0) {
+      console.log('_runInTab retrying: ', retryCount);
+      if (retryCount > 10)
+        throw new Error('faild to run script in the specified tab: ', tabId, tab.url);
+    }
     try {
-      const tab = await browser.tabs.get(tabId);
       if (!/^(about:blank|(https?|file):\/\/)/.test(tab.url))
         return;
       if (typeof browser.tabs.executeScript == 'function') { // Manifest V2
@@ -84,6 +90,13 @@ class RichConfirm {
     }
     catch(error) {
       console.error(error);
+      if (tab.url == 'about:blank')
+        return new Promise(resolve => {
+          setTimeout(async () => {
+            func.$retryCount = retryCount + 1;
+            resolve(await this._runInTab(tabId, func, ...args));
+          }, 100);
+        });
     }
   }
 
@@ -259,7 +272,8 @@ class RichConfirm {
     let ownerWin;
     const [shouldPreventRestoration] = await Promise.all([
       (async () => {
-        // Thunderbird disallows us to inject scripts to a blank tab, so we need to avoid using about:blank!
+        // Thunderbird does not restore browser windows, so
+        // we don't need to use hack to prevent window restoration.
         if (globalThis?.messenger)
           return false;
         try {
