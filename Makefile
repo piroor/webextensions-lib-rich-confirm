@@ -6,7 +6,7 @@ NPM_BIN_DIR := $(NPM_MOD_DIR)/.bin
 all: lint
 
 install_dependency:
-	npm install
+	npm install --save-dev
 	cp node_modules/dompurify/dist/purify.es.mjs* ./
 
 lint:
