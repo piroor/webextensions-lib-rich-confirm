@@ -13,5 +13,5 @@ jobs:
       with:
         node-version: '20.x'
     - uses: actions/checkout@v1
-    - run: npm install
+    - run: make install_dependency
     - run: make lint

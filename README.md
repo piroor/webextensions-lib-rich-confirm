@@ -10,7 +10,9 @@ Helps to provide confirmation dialog with checkbox.
 
 ## Required permissions
 
- * `tabs` or `activeTab`, if you want to use `RichConfirm.showInTab()`.
+ * `tabs` or `activeTab` permission, if you want to use `RichConfirm.showInTab()`.
+ * Requires [DOMPurify](https://github.com/cure53/dompurify) as the sanitizer.
+   Please put `purify.es.mjs` to the same directory.
 
 ## Basic usage
 
@@ -46,7 +48,7 @@ Here is the list of parameters:
 
 And there are more advanced parameters. See also the "Advanced usage" section.
 
- * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This parameter is exclusive with `message`. (`String`)
+ * `content` (optional): A source of HTML fragment to show as the content of the confirmation dialog. This is automatically sanitized by DOMPurify. This parameter is exclusive with `message`. (`String`)
  * `values` (optional): Values to be filled to the fields. Fielrs are automatically detected with their `id` or `name` based on the keys of the object. (`Object`)
  * `extraClass` (optional): Additional class name for the dialog element. It will help you styling of custom dialogs. (`String`)
 

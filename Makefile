@@ -7,6 +7,7 @@ all: lint
 
 install_dependency:
 	npm install
+	cp node_modules/dompurify/dist/purify.es.mjs* ./
 
 lint:
 	$(NPM_BIN_DIR)/eslint . --report-unused-disable-directives

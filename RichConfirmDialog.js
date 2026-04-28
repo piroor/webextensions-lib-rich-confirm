@@ -5,6 +5,8 @@
 */
 'use strict';
 
+import DOMPurify from './purify.es.mjs';
+
 class RichConfirmDialog {
   constructor(params) {
     this.uniqueKey = params.uniqueKey || 'default';
@@ -553,7 +555,7 @@ class RichConfirmDialog {
     this.style.textContent = this.generateStyleDefinitions();
     document.head.appendChild(this.style);
 
-    document.body.insertAdjacentHTML('beforeend', this.generateUI());
+    document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(this.generateUI()));
     this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
   }
 
@@ -639,7 +641,7 @@ class RichConfirmDialog {
 
   /* async */updateContent({ content, message }) {
     if (content) {
-      this.content.insertAdjacentHTML('beforeend', content);
+      this.content.insertAdjacentHTML('beforeend', DOMPurify.sanitize(content));
       for (const element of this.content.querySelectorAll('[accesskey]')) {
         this.updateAccessKey(element);
       }
