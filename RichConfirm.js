@@ -337,7 +337,7 @@ class RichConfirm {
         uniqueKey,
         simulation: true,
       });
-      simulation.buildUI();
+      await simulation.buildUI();
       const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
       simulatedContainer.style.minWidth  = `${minWidth}px`;
       simulatedContainer.style.minHeight = `${minHeight}px`;

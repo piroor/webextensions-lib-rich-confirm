@@ -26,7 +26,44 @@ class RichConfirmDialog {
   }
   async safeAppend(parent, source) {
     if (globalThis.Sanitizer) { // HTML Sanitizer API, Firefox 148 and later
-      this.$sanitizer ||= new Sanitizer();
+      this.$sanitizer ||= new Sanitizer({
+        elements: `
+          a abbr b blockquote br code div em i span strong
+          p ul ol li pre
+          h1 h2 h3 h4 h5 h6
+          table thead tbody tr th td
+          form label input textarea select option button 
+          img audio video source
+        `.trim().split(/s+/),
+        attributes: `
+          action
+          alt
+          checked
+          class
+          cols
+          dir
+          disabled
+          height
+          href
+          id
+          lang
+          method
+          multiple
+          name
+          placeholder
+          rel
+          rows
+          selected
+          size
+          src
+          target
+          title
+          type
+          value
+          width
+        `.trim().split(/s+/),
+        dataAttributes: true,
+      });
       const tempDiv = document.createElement('div');
       tempDiv.setHTML(source, { sanitizer: this.$sanitizer });
       parent.append(...tempDiv.childNodes);
