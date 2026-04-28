@@ -11,8 +11,8 @@ Helps to provide confirmation dialog with checkbox.
 ## Required permissions
 
  * `tabs` or `activeTab` permission, if you want to use `RichConfirm.showInTab()`.
- * Requires [DOMPurify](https://github.com/cure53/dompurify) as the sanitizer.
-   Please put `purify.es.mjs` to the same directory.
+ * Requires [HTML Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Sanitizer_API) or [DOMPurify](https://github.com/cure53/dompurify) as the sanitizer.
+   Please put `purify.es.mjs` to the same directory, if the runtime environment may not support the HTML Sanitizer API.
 
 ## Basic usage
 

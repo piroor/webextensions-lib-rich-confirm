@@ -5,8 +5,6 @@
 */
 'use strict';
 
-import DOMPurify from './purify.es.mjs';
-
 class RichConfirmDialog {
   constructor(params) {
     this.uniqueKey = params.uniqueKey || 'default';
@@ -23,7 +21,22 @@ class RichConfirmDialog {
     this.onKeyUp       = this.onKeyUp.bind(this);
     this.onContextMenu = this.onContextMenu.bind(this);
     this.onUnload      = this.onUnload.bind(this);
+
+    this.$sanitizer = null;
   }
+  async safeAppend(parent, source) {
+    if (globalThis.Sanitizer) { // HTML Sanitizer API, Firefox 148 and later
+      this.$sanitizer ||= new Sanitizer();
+      const tempDiv = document.createElement('div');
+      tempDiv.setHTML(source, { sanitizer: this.$sanitizer });
+      parent.append(...tempDiv.childNodes);
+      return;
+    }
+
+    this.$sanitizer ||= await import('./purify.es.mjs');
+    parent.insertAdjacentHTML('beforeend', this.$sanitizer.sanitize(source));
+  }
+
   get commonClass() {
     return `rich-confirm-${this.uniqueKey}`;
   }
@@ -547,7 +560,7 @@ class RichConfirmDialog {
     return this.$uniqueId ||= `created-at-${Date.now()}-${Math.floor(Math.random() * Math.pow(2, 24))}`;
   }
 
-  buildUI() {
+  async buildUI() {
     if (this.ui)
       return;
     this.style = document.createElement('style');
@@ -555,7 +568,7 @@ class RichConfirmDialog {
     this.style.textContent = this.generateStyleDefinitions();
     document.head.appendChild(this.style);
 
-    document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(this.generateUI()));
+    await this.safeAppend(document.body, this.generateUI());
     this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
   }
 
@@ -639,9 +652,9 @@ class RichConfirmDialog {
     }
   }
 
-  /* async */updateContent({ content, message }) {
+  async updateContent({ content, message }) {
     if (content) {
-      this.content.insertAdjacentHTML('beforeend', DOMPurify.sanitize(content));
+      await this.safeAppend(this.content, content);
       for (const element of this.content.querySelectorAll('[accesskey]')) {
         this.updateAccessKey(element);
       }
@@ -657,7 +670,7 @@ class RichConfirmDialog {
   }
 
   async show() {
-    this.buildUI();
+    await this.buildUI();
     await new Promise((resolve, _reject) => setTimeout(resolve, 0));
 
     await this.updateContent(this.params);
