@@ -26,7 +26,7 @@ class RichConfirmDialog {
   }
   async safeAppend(parent, source) {
     if (globalThis.Sanitizer) { // HTML Sanitizer API, Firefox 148 and later
-      this.$sanitizer ||= new Sanitizer({
+      this.$sanitizer ||= new globalThis.Sanitizer({
         elements: `
           a abbr b blockquote br code div em i span strong
           p ul ol li pre
