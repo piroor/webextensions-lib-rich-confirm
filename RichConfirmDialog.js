@@ -34,7 +34,7 @@ class RichConfirmDialog {
           table thead tbody tr th td
           form label input textarea select option button 
           img audio video source
-        `.trim().split(/s+/),
+        `.trim().split(/\s+/),
         attributes: `
           action
           alt
@@ -61,7 +61,7 @@ class RichConfirmDialog {
           type
           value
           width
-        `.trim().split(/s+/),
+        `.trim().split(/\s+/),
         dataAttributes: true,
       });
       const tempDiv = document.createElement('div');
