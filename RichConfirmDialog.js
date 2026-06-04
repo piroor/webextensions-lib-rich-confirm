@@ -70,7 +70,7 @@ class RichConfirmDialog {
       return;
     }
 
-    this.$sanitizer ||= await import('./purify.es.mjs');
+    this.$sanitizer ||= (await import('./purify.es.mjs')).default;
     parent.insertAdjacentHTML('beforeend', this.$sanitizer.sanitize(source));
   }
 
