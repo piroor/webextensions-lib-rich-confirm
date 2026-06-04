@@ -128,6 +128,8 @@ class RichConfirmDialog {
       /* color scheme */
       ${common}.rich-confirm,
       :root${common} {
+        --in-content-ui-scale: ${window.devicePixelRatio}; /* Web contents may be zoomed by the user, and we need to cancel the zoom effect. */
+
         /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
         --in-content-page-color: var(--grey-90);
         --in-content-page-background: var(--grey-10);
@@ -301,7 +303,7 @@ class RichConfirmDialog {
         ${common}.rich-confirm textarea,
         ${common}.rich-confirm input {
           background: var(--in-content-box-background);
-          border: thin solid var(--in-content-box-border-color-mixed);
+          border: calc(1px / var(--in-content-ui-scale)) solid var(--in-content-box-border-color-mixed);
           color: var(--in-content-text-color);
         }
         ${common}.rich-confirm textarea:hover,
@@ -311,13 +313,13 @@ class RichConfirmDialog {
         ${common}.rich-confirm textarea:focus,
         ${common}.rich-confirm input:focus {
           border-color: var(--in-content-border-focus);
-          box-shadow: 0 0 0 1px var(--in-content-border-active),
-                      0 0 0 4px var(--in-content-border-active-shadow);
+          box-shadow: 0 0 0 calc(1px / var(--in-content-ui-scale)) var(--in-content-border-active),
+                      0 0 0 calc(4px / var(--in-content-ui-scale)) var(--in-content-border-active-shadow);
         }
 
         ${common}.rich-confirm fieldset,
         ${common}.rich-confirm hr {
-          border: thin solid var(--in-content-box-border-color-mixed);
+          border: calc(1px / var(--in-content-ui-scale)) solid var(--in-content-box-border-color-mixed);
         }
 
         ${common}.rich-confirm hr {
@@ -329,7 +331,7 @@ class RichConfirmDialog {
           background: var(--in-content-button-background-mixed);
           border: 0 none transparent;
           color: var(--in-content-text-color);
-          margin: 4px;
+          margin: calc(4px / var(--in-content-ui-scale));
         }
         ${common}.rich-confirm button:hover,
         ${common}.rich-confirm select:hover {
@@ -338,8 +340,8 @@ class RichConfirmDialog {
         ${common}.rich-confirm button:focus,
         ${common}.rich-confirm select:focus {
           background: var(--in-content-button-background-active-mixed);
-          box-shadow: 0 0 0 1px var(--in-content-border-active),
-                      0 0 0 4px var(--in-content-border-active-shadow);
+          box-shadow: 0 0 0 calc(1px / var(--in-content-ui-scale)) var(--in-content-border-active),
+                      0 0 0 calc(4px / var(--in-content-ui-scale)) var(--in-content-border-active-shadow);
         }
         ${common}.rich-confirm option {
           background: var(--bg-color);
@@ -398,6 +400,7 @@ class RichConfirmDialog {
       ${common}.rich-confirm-dialog {
         color: var(--text-color);
         font: message-box;
+        font-size: calc(100% / var(--in-content-ui-scale));
         overflow: hidden;
         padding: 1em;
         z-index: 999999;
@@ -516,6 +519,8 @@ class RichConfirmDialog {
       ${common}.rich-confirm button {
         -moz-appearance: button;
         font: message-box;
+        font-size: 100%;
+        padding: 0.3em;
         text-align: center;
       }
 
@@ -559,7 +564,7 @@ class RichConfirmDialog {
         position: static !important;
       }
       ${common}.rich-confirm-dialog.simulation {
-        border:  1px solid;
+        border: calc(1px / var(--in-content-ui-scale)) solid;
       }
     `;
   }
