@@ -241,6 +241,7 @@ class RichConfirmDialog {
 
         --bg-color: var(--grey-10);
         --text-color: var(--grey-90);
+        font: message-box;
       }
 
       ${common}.rich-confirm.rtl {
@@ -399,14 +400,10 @@ class RichConfirmDialog {
 
       ${common}.rich-confirm-dialog {
         color: var(--text-color);
-        font: message-box;
+        font-size: calc(100% / var(--in-content-ui-scale));
         overflow: hidden;
         padding: 1em;
         z-index: 999999;
-
-        > * {
-          font-size: calc(100% / var(--in-content-ui-scale));
-        }
       }
       /* Don't apply "auto" immediately because it can produce needless scrollbar even if all contents are visible without scrolling. */
       ${common}.rich-confirm.shown .rich-confirm-dialog {
@@ -526,7 +523,7 @@ class RichConfirmDialog {
         text-align: center;
 
         > * {
-          font-size: 100%;
+          font-size: calc(100% / var(--in-content-ui-scale));
         }
       }
 
