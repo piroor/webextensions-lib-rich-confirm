@@ -32,7 +32,7 @@ class RichConfirmDialog {
           p ul ol li pre
           h1 h2 h3 h4 h5 h6
           table thead tbody tr th td
-          form label input textarea select option button 
+          form label input textarea select option button
           img audio video source
         `.trim().split(/\s+/),
         attributes: `
@@ -56,6 +56,7 @@ class RichConfirmDialog {
           selected
           size
           src
+          style
           target
           title
           type
