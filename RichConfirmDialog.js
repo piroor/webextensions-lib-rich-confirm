@@ -400,10 +400,13 @@ class RichConfirmDialog {
       ${common}.rich-confirm-dialog {
         color: var(--text-color);
         font: message-box;
-        font-size: calc(100% / var(--in-content-ui-scale));
         overflow: hidden;
         padding: 1em;
         z-index: 999999;
+
+        > * {
+          font-size: calc(100% / var(--in-content-ui-scale));
+        }
       }
       /* Don't apply "auto" immediately because it can produce needless scrollbar even if all contents are visible without scrolling. */
       ${common}.rich-confirm.shown .rich-confirm-dialog {
@@ -519,9 +522,12 @@ class RichConfirmDialog {
       ${common}.rich-confirm button {
         -moz-appearance: button;
         font: message-box;
-        font-size: 100%;
         padding: 0.3em;
         text-align: center;
+
+        > * {
+          font-size: 100%;
+        }
       }
 
       ${common}.rich-confirm-buttons:not(.type-dialog):not(.type-common-dialog) button {
@@ -733,7 +739,7 @@ class RichConfirmDialog {
     const buttons = document.createDocumentFragment();
     for (const label of this.params.buttons) {
       const button = document.createElement('button');
-      button.textContent = label;
+      button.appendChild(document.createElement('span')).textContent = label;
       button.setAttribute('title', label);
       buttons.appendChild(button);
       this.updateAccessKey(button);
