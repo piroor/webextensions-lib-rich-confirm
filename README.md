@@ -139,16 +139,19 @@ If you want to show the confirmation dialog in the content area, call `RichConfi
 
 ```javascript
 var result = await RichConfirm.showInTab(10, {
-  message:      'Are you ready?',
-  buttons:      ['Yes', 'No'],
-  checkMessage: 'Never show',
-  checked:      false
+  message:          'Are you ready?',
+  buttons:          ['Yes', 'No'],
+  checkMessage:     'Never show',
+  checked:          false
+  devicePixelRatio: window.devicePixelRatio,
 });
 ```
 
 The first parameter is `tabs.Tab.id`, the second parameter is same to `RichConfirm.show()`. If you omit the first argument, the dialog will appear in the current tab.
 
 The in-content dialog will be enclosed in a `iframe` under a closed shadow DOM, so you don't worry about accesses from scripts in the web page, or confliction of `id`/`name`s of fields.
+
+Tab contents may be scaled by the user, so this library tires to rescale dialog's UI based on the `window.devicePixelRatio` in the tab contents. The mechanism may fail if the tab is rendered in a hi-res screen, so you can give the `devicePixelRatio` parameter to specify the base device pixel ratio in the screen which can be sampled from any sidebar panel or something custom UI if your extension have that.
 
 
 ## Confirmation in a popup window

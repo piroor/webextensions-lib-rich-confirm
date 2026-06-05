@@ -124,11 +124,12 @@ class RichConfirmDialog {
 
   generateStyleDefinitions() {
     const common = `.${this.commonClass}`;
+    const scale = window.devicePixelRatio / (this.params.devicePixelRatio || 1);
     return `
       /* color scheme */
       ${common}.rich-confirm,
       :root${common} {
-        --in-content-ui-scale: ${window.devicePixelRatio}; /* Web contents may be zoomed by the user, and we need to cancel the zoom effect. */
+        --in-content-ui-scale: ${scale}; /* Web contents may be zoomed by the user, and we need to cancel the zoom effect. */
 
         /* https://hg.mozilla.org/mozilla-central/raw-file/tip/toolkit/themes/shared/in-content/common.inc.css */
         --in-content-page-color: var(--grey-90);
