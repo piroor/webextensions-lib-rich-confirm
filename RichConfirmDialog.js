@@ -652,7 +652,7 @@ class RichConfirmDialog {
       if (matchedKey &&
           !/^(input|textarea)$/i.test(element.localName)) {
         const textNode = this.evaluateXPath(
-          `child::node()[contains(self::text(), "${matchedKey[1]}")]`,
+          `descendant::node()[contains(self::text(), "${matchedKey[1]}")]`,
           element,
           XPathResult.FIRST_ORDERED_NODE_TYPE
         ).singleNodeValue;
