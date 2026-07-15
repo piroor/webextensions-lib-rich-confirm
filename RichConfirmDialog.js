@@ -1107,6 +1107,9 @@ class RichConfirmDialog {
       catch (error) {
         console.error(error);
       }
+      if (params.popup) {
+        params.devicePixelRatio = window.devicePixelRatio;
+      }
     }
 
     if (window.top !== window) {
