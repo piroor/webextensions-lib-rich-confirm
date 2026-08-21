@@ -799,6 +799,7 @@ class RichConfirmDialog {
             availHeight:       screen.availHeight,
             windowFrameWidth:  window.outerWidth - window.innerWidth,
             windowFrameHeight: window.outerHeight - window.innerHeight,
+            devicePixelRatio:  window.devicePixelRatio,
           }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
         }
         catch(error) {

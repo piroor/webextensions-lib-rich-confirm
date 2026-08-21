@@ -647,7 +647,7 @@ class RichConfirm {
     return win;
   }
 
-  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight, windowFrameWidth, windowFrameHeight }) {
+  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight, windowFrameWidth, windowFrameHeight, devicePixelRatio }) {
     const [dialogWin, ownerWin] = await Promise.all([
       browser.windows.get(dialogWindowId),
       browser.windows.get(ownerWindowId),
@@ -667,8 +667,8 @@ class RichConfirm {
     if (placedOnOwner && placedInsideViewArea)
       return;
 
-    const width  = dialogWin.width + windowFrameWidth;
-    const height = dialogWin.height + windowFrameHeight;
+    const width  = Math.round(dialogWin.width * devicePixelRatio + windowFrameWidth);
+    const height = Math.round(dialogWin.height * devicePixelRatio + windowFrameHeight);
     const left = ownerWin.left + Math.round((ownerWin.width - width) / 2);
     const top  = ownerWin.top + Math.round((ownerWin.height - height) / 2);
     return browser.windows.update(dialogWin.id, {
