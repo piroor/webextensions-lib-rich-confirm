@@ -122,9 +122,13 @@ class RichConfirmDialog {
     return this.RTL_LANGUAGES.has(lang);
   }
 
+  get scale() {
+    return this.params.simulation ? 1 : (window.devicePixelRatio / (this.params.devicePixelRatio || 1));
+  }
+
   generateStyleDefinitions() {
     const common = `.${this.commonClass}`;
-    const scale = window.devicePixelRatio / (this.params.devicePixelRatio || 1);
+    const scale  = this.scale;
     return `
       /* color scheme */
       ${common}.rich-confirm,
@@ -799,7 +803,7 @@ class RichConfirmDialog {
             availHeight:       screen.availHeight,
             windowFrameWidth:  window.outerWidth - window.innerWidth,
             windowFrameHeight: window.outerHeight - window.innerHeight,
-            devicePixelRatio:  window.devicePixelRatio,
+            scale:             this.scale,
           }).catch(error => console.log('failed to send DIALOG_READY_NOTIFICATION_TYPE message: ', error));
         }
         catch(error) {
@@ -1108,9 +1112,9 @@ class RichConfirmDialog {
       catch (error) {
         console.error(error);
       }
-      if (params.popup) {
-        params.devicePixelRatio = window.devicePixelRatio;
-      }
+    }
+    if (params.popup) {
+      params.devicePixelRatio = window.devicePixelRatio;
     }
 
     if (window.top !== window) {

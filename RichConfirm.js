@@ -599,17 +599,20 @@ class RichConfirm {
   // based on its unique URL.
   static async _safeCreateWindow(params) {
     const existingWindowIds = new Set((await browser.windows.getAll()).map(win => win.id));
+    const extraParams = [];
     // We must not add any extra query or hash for "about:blank", because it is very special URL.
     // Extension with <all_urls> permission can inject arbitrary script to an "about:blank" page,
     // but injection will fail for URIs like "about:blank#..." with missing host permission.
     // Moreover, dialog window with "about:blank" is used to avoid closed windows restoration.
     const uniqueKeyParam = params.url == 'about:blank' ? null : `popup-id-for-${this.uniqueKey}=${parseInt(Math.random() * Math.pow(2, 16))}`;
-    const dialogUrl = !uniqueKeyParam ? params.url : params.url.replace(/[?#]|$/, matched => {
+    if (uniqueKeyParam)
+      extraParams.push(uniqueKeyParam);
+    const dialogUrl = extraParams.length == 0 ? params.url : params.url.replace(/[?#]|$/, matched => {
       if (!matched)
-        return `#${uniqueKeyParam}`;
+        return `#${extraParams.join('&')}`;
       if (matched == '?')
-        return `?${uniqueKeyParam}&`;
-      return `?#{uniqueKeyParam}#`;
+        return `?${extraParams.join('&')}&`;
+      return `?${extraParams.join('&')}#`;
     });
     let win;
     const promisedWin = browser.windows.create({
@@ -647,7 +650,7 @@ class RichConfirm {
     return win;
   }
 
-  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight, windowFrameWidth, windowFrameHeight, devicePixelRatio }) {
+  static async _tryRepositionDialogToCenterOfOwner({ dialogWindowId, ownerWindowId, availLeft, availTop, availWidth, availHeight, windowFrameWidth, windowFrameHeight, scale }) {
     const [dialogWin, ownerWin] = await Promise.all([
       browser.windows.get(dialogWindowId),
       browser.windows.get(ownerWindowId),
@@ -667,8 +670,8 @@ class RichConfirm {
     if (placedOnOwner && placedInsideViewArea)
       return;
 
-    const width  = Math.round(dialogWin.width * devicePixelRatio + windowFrameWidth);
-    const height = Math.round(dialogWin.height * devicePixelRatio + windowFrameHeight);
+    const width  = Math.round(dialogWin.width * scale + windowFrameWidth);
+    const height = Math.round(dialogWin.height * scale + windowFrameHeight);
     const left = ownerWin.left + Math.round((ownerWin.width - width) / 2);
     const top  = ownerWin.top + Math.round((ownerWin.height - height) / 2);
     return browser.windows.update(dialogWin.id, {
