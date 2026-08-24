@@ -670,8 +670,8 @@ class RichConfirm {
     if (placedOnOwner && placedInsideViewArea)
       return;
 
-    const width  = Math.round(dialogWin.width / scale + windowFrameWidth);
-    const height = Math.round(dialogWin.height / scale + windowFrameHeight);
+    const width  = Math.round(dialogWin.width * scale + windowFrameWidth);
+    const height = Math.round(dialogWin.height * scale + windowFrameHeight);
     const left = ownerWin.left + Math.round((ownerWin.width - width) / 2);
     const top  = ownerWin.top + Math.round((ownerWin.height - height) / 2);
     return browser.windows.update(dialogWin.id, {
