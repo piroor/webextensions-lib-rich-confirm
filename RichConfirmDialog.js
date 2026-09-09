@@ -624,6 +624,44 @@ class RichConfirmDialog {
 
     await this.safeAppend(document.body, this.generateUI());
     this.ui = document.querySelector(`.rich-confirm.${this.commonClass}.${this.uniqueId}`);
+    this.applyCustomGeometry();
+  }
+
+  /**
+   * Apply optional explicit width/height/left/top (given via params) to
+   * the dialog box, for non-popup-window display modes (show()/showInTab()).
+   * In popup-window mode the dialog box always fills the whole popup
+   * window by CSS (flex-grow: 1), so explicit geometry there is instead
+   * handled at the OS window level by RichConfirm.showInPopup() (which
+   * passes width/height/left/top to browser.windows.create()).
+   */
+  applyCustomGeometry() {
+    if (this.params.popup || this.params.simulation)
+      return;
+
+    const dialog = this.dialog;
+    if (!dialog)
+      return;
+
+    if (typeof this.params.width == 'number')
+      dialog.style.width = `${this.params.width}px`;
+    if (typeof this.params.height == 'number')
+      dialog.style.height = `${this.params.height}px`;
+
+    if (typeof this.params.left == 'number' ||
+        typeof this.params.top == 'number') {
+      const row = this.ui.querySelector('.rich-confirm-row');
+      if (row) {
+        row.style.alignItems = 'flex-start';
+        row.style.justifyContent = 'flex-start';
+      }
+      dialog.style.position = 'fixed';
+      dialog.style.margin = '0';
+      if (typeof this.params.left == 'number')
+        dialog.style.left = `${this.params.left}px`;
+      if (typeof this.params.top == 'number')
+        dialog.style.top = `${this.params.top}px`;
+    }
   }
 
   getNextFocusedNodeByAccesskey(key) {

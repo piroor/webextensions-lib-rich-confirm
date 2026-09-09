@@ -313,7 +313,7 @@ class RichConfirm {
       (/^Mac/i.test(navigator.platform) &&
        ownerWin.state == 'fullscreen')
     );
-    let dialogFullUrl, simulatedSize;
+    let dialogFullUrl, dimensionParams;
 
     // on macOS, a popup window opened from a fullscreen browser window is always
     // opened as a new fullscreen window, thus we need to fallback to a workaround.
@@ -323,48 +323,67 @@ class RichConfirm {
     else {
       dialogFullUrl = `${this.dialogHtmlPath}?__RichConfirm__=1&uniqueKey=${encodeURIComponent(uniqueKey)}&oneTimeKey=${encodeURIComponent(oneTimeKey)}&params=${encodeURIComponent(JSON.stringify({...params, ownerWindowId: ownerWin.id, tab: false, popup: true}))}`;
 
-      const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
-      const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
-
-      // Simulated run on the current window to calculate size
-      if (!this.Dialog) {
-        await this.ensureDialogClassLoaded();
-      }
-      const simulation = new this.Dialog({
-        tab:        false,
-        popup:      true,
-        ...params,
-        uniqueKey,
-        simulation: true,
-      });
-      await simulation.buildUI();
-      const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
-      simulatedContainer.style.minWidth  = `${minWidth}px`;
-      simulatedContainer.style.minHeight = `${minHeight}px`;
-      await new Promise((resolve, _reject) => {
-        const originalOnShown = simulation.onShown.bind(simulation);
-        simulation.onShown = async (container) => {
-          const result = originalOnShown(container);
-          if (result instanceof Promise)
-            await result;
-          setTimeout(() => {
-            resolve();
-          }, 0);
+      // If the caller explicitly gives both width and height, skip the
+      // automatic size calculation (which needs a hidden "simulation" run
+      // of the dialog to measure its natural size) and use the given
+      // values as-is.
+      if (typeof params.width == 'number' && typeof params.height == 'number') {
+        dimensionParams = {
+          width:  params.width,
+          height: params.height,
         };
-        simulation.show();
-      });
-      const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
-      const simulatedRect   = simulatedDialog.getBoundingClientRect();
+      }
+      else {
+        const minWidth  = Math.max(ownerWin.width, Math.ceil(screen.availWidth / 3));
+        const minHeight = Math.max(ownerWin.height, Math.ceil(screen.availHeight / 3));
 
-      const safetyFactor  = 1.05;
-      simulatedSize = {
-        width:  Math.ceil(simulatedRect.width * safetyFactor),
-        height: Math.ceil(simulatedRect.height * safetyFactor)
-      };
-      simulation.hide();
+        // Simulated run on the current window to calculate size
+        if (!this.Dialog) {
+          await this.ensureDialogClassLoaded();
+        }
+        const simulation = new this.Dialog({
+          tab:        false,
+          popup:      true,
+          ...params,
+          uniqueKey,
+          simulation: true,
+        });
+        await simulation.buildUI();
+        const simulatedContainer = simulation.ui.querySelector('.rich-confirm-row');
+        simulatedContainer.style.minWidth  = `${minWidth}px`;
+        simulatedContainer.style.minHeight = `${minHeight}px`;
+        await new Promise((resolve, _reject) => {
+          const originalOnShown = simulation.onShown.bind(simulation);
+          simulation.onShown = async (container) => {
+            const result = originalOnShown(container);
+            if (result instanceof Promise)
+              await result;
+            setTimeout(() => {
+              resolve();
+            }, 0);
+          };
+          simulation.show();
+        });
+        const simulatedDialog = simulation.ui.querySelector('.rich-confirm-dialog');
+        const simulatedRect   = simulatedDialog.getBoundingClientRect();
 
-      simulatedSize.top  = ownerWin.top + Math.floor((ownerWin.height - simulatedSize.height) / 2);
-      simulatedSize.left = ownerWin.left + Math.floor((ownerWin.width - simulatedSize.width) / 2);
+        const safetyFactor  = 1.05;
+        dimensionParams = {
+          width:  Math.ceil(simulatedRect.width * safetyFactor),
+          height: Math.ceil(simulatedRect.height * safetyFactor)
+        };
+        simulation.hide();
+      }
+
+      // Position: honor explicit left/top if given, otherwise center the
+      // dialog on the owner window (as before). This is independent of
+      // whether width/height were explicitly given or auto-calculated.
+      dimensionParams.top = typeof params.top == 'number' ?
+        params.top :
+        ownerWin.top + Math.floor((ownerWin.height - dimensionParams.height) / 2);
+      dimensionParams.left = typeof params.left == 'number' ?
+        params.left :
+        ownerWin.left + Math.floor((ownerWin.width - dimensionParams.width) / 2);
     }
 
     const playgroundUrl = shouldPreventRestoration ? 'about:blank' : dialogFullUrl;
@@ -455,7 +474,7 @@ class RichConfirm {
       win = await this._safeCreateWindow({
         url:  playgroundUrl,
         type: 'popup',
-        ...simulatedSize,
+        ...dimensionParams,
       });
       // Due to a Firefox's bug we cannot open popup type window
       // at specified position.
@@ -469,8 +488,8 @@ class RichConfirm {
         // So, I grudgingly accept the position of the dialog placed
         // if the popup (partially or fully) covers the owner window.
         browser.windows.update(win.id, {
-          top:  simulatedSize.top,
-          left: simulatedSize.left
+          top:  dimensionParams.top,
+          left: dimensionParams.left
         });
       }
       playgroundTab = win.tabs.find(tab => tab.active);
