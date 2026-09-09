@@ -705,6 +705,10 @@ class RichConfirmDialog {
 
   async updateContent({ content, message }) {
     if (content) {
+      const range = document.createRange();
+      range.selectNodeContents(this.content);
+      range.deleteContents();
+      range.detach();
       await this.safeAppend(this.content, content);
       for (const element of this.content.querySelectorAll('[accesskey]')) {
         this.updateAccessKey(element);
