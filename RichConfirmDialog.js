@@ -47,7 +47,9 @@ class RichConfirmDialog {
           href
           id
           lang
+          max
           method
+          min
           multiple
           name
           placeholder
@@ -56,6 +58,7 @@ class RichConfirmDialog {
           selected
           size
           src
+          step
           style
           target
           title
